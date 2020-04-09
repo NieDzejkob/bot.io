@@ -1,4 +1,4 @@
 fn main() {
     dbg!(mathparser::ExprParser::new()
-        .parse("(2 + 2 +"));
+        .parse("2 + f(x)"));
 }
