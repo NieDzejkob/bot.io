@@ -1,0 +1,35 @@
+use crate::{BinOp, Expr};
+use num_bigint::BigUint;
+
+grammar;
+
+Tier<Op, NextTier>: Box<Expr<'input>> = {
+    Tier<Op, NextTier> Op NextTier => Box::new(Expr::BinOp(<>)),
+    NextTier
+};
+
+pub Expr = Tier<ExprOp, Factor>;
+Factor = Tier<FactorOp, Neg>;
+
+ExprOp: BinOp = {
+    "+" => BinOp::Add,
+    "-" => BinOp::Sub,
+};
+
+FactorOp: BinOp = {
+    "*" => BinOp::Mul,
+    "/" => BinOp::Div,
+    "%" => BinOp::Mod,
+};
+
+Neg: Box<Expr<'input>> = {
+    "-" <Term> => Box::new(Expr::Neg(<>)),
+    Term,
+};
+
+Term: Box<Expr<'input>> = {
+    "(" <Expr> ")",
+    Num => Box::new(Expr::Num(<>)),
+};
+
+Num: BigUint = r"0|[1-9][0-9]*" => <>.parse().unwrap();

@@ -1,0 +1,13 @@
+[package]
+name = "mathparser"
+version = "0.1.0"
+authors = ["Jakub Kądziołka <kuba@kadziolka.net>"]
+edition = "2018"
+
+[build-dependencies]
+lalrpop = { version = "^0.18.1", features = ["lexer"] }
+
+[dependencies]
+num-bigint = "^0.2.6"
+lalrpop-util = "^0.18.1"
+regex = "1"
