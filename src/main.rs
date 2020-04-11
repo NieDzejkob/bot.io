@@ -1,4 +1,9 @@
+use mathparser::{ConcreteContext, ExprParser};
+
 fn main() {
-    dbg!(mathparser::ExprParser::new()
-        .parse("2 + f(x)"));
+    let ctx = ConcreteContext::new();
+    let expr = ExprParser::new()
+        .parse("2 + 2")
+        .unwrap();
+    dbg!(expr.evaluate(&ctx, &mut |_, _| ()));
 }
