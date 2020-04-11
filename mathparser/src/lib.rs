@@ -1,6 +1,6 @@
 use num_bigint::BigUint;
 use num_rational::BigRational;
-use std::borrow::Cow;
+use num_traits::identities::Zero;
 use std::collections::HashMap;
 
 #[macro_use] extern crate lalrpop_util;
@@ -47,11 +47,11 @@ pub enum EvalError<'a> {
     DivisionByZero,
 }
 
-impl Expr<'_> {
+impl<'input> Expr<'input> {
     pub fn evaluate(&self,
         ctx: &ConcreteContext<'_>,
         scoring_callback: &mut impl FnMut(&'static str, Vec<BigRational>),
-    ) -> Result<BigRational, EvalError<'_>> {
+    ) -> Result<BigRational, EvalError<'input>> {
         Ok(match self {
             Expr::Ident(id) => ctx.get_variable(id)?.clone(),
             Expr::Num(n) => BigRational::from_integer(n.clone().into()),
@@ -61,7 +61,13 @@ impl Expr<'_> {
                 let rhs = rhs.evaluate(ctx, scoring_callback)?;
                 match op {
                     BinOp::Add => lhs + rhs,
-                    _ => unimplemented!(),
+                    BinOp::Sub => lhs - rhs,
+                    BinOp::Mul => lhs * rhs,
+                    BinOp::Div | BinOp::Mod if rhs.is_zero() => {
+                        return Err(EvalError::DivisionByZero);
+                    }
+                    BinOp::Div => lhs / rhs,
+                    BinOp::Mod => lhs % rhs,
                 }
             }
             _ => unimplemented!(),
@@ -117,13 +123,42 @@ pub enum Pred<'a> {
 mod tests {
     use super::*;
 
+    fn empty_ctx(expr: &str) -> Result<BigRational, EvalError<'_>> {
+        let ctx = ConcreteContext::new();
+        with_ctx(&ctx, expr)
+    }
+
+    fn with_ctx<'a>(ctx: &ConcreteContext<'_>, expr: &'a str) -> Result<BigRational, EvalError<'a>> {
+        let expr = ExprParser::new()
+            .parse(expr)
+            .unwrap();
+        expr.evaluate(ctx, &mut |_, _| ())
+    }
+
     #[test]
     fn it_works() {
-        let ctx = ConcreteContext::new();
-        let expr = ExprParser::new()
-            .parse("2 + 2")
-            .unwrap();
-        let val = expr.evaluate(&ctx, &mut |_, _| ());
-        assert_eq!(val, Ok(BigRational::from_integer(4.into())));
+        assert_eq!(empty_ctx("2 + 2"), Ok(BigRational::from_integer(4.into())));
+    }
+
+    #[test]
+    fn handles_negatives() {
+        assert_eq!(empty_ctx("2 + -3"), Ok(BigRational::from_integer((-1).into())));
+    }
+
+    #[test]
+    fn div0_doesnt_explode() {
+        assert_eq!(empty_ctx("2 / 0"), Err(EvalError::DivisionByZero));
+    }
+
+    #[test]
+    fn unknown_variable() {
+        assert_eq!(empty_ctx("3 * x"), Err(EvalError::UnknownVariable("x")));
+    }
+
+    #[test]
+    fn handles_variable() {
+        let mut ctx = ConcreteContext::new();
+        ctx.0.insert("x".to_owned(), SymbolValue::Num(BigRational::from_integer(7.into())));
+        assert_eq!(with_ctx(&ctx, "3 * x"), Ok(BigRational::from_integer(21.into())));
     }
 }
