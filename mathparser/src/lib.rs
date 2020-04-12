@@ -54,8 +54,6 @@ impl<'input> Expr<'input> {
     ) -> Result<BigRational, EvalError<'input>> {
         Ok(match self {
             Expr::Ident(id) => ctx.get_variable(id)?.clone(),
-            Expr::Num(n) => BigRational::from_integer(n.clone().into()),
-            Expr::Neg(e) => -e.evaluate(ctx, scoring_callback)?,
             Expr::BinOp(lhs, op, rhs) => {
                 let lhs = lhs.evaluate(ctx, scoring_callback)?;
                 let rhs = rhs.evaluate(ctx, scoring_callback)?;
@@ -70,6 +68,8 @@ impl<'input> Expr<'input> {
                     BinOp::Mod => lhs % rhs,
                 }
             }
+            Expr::Neg(e) => -e.evaluate(ctx, scoring_callback)?,
+            Expr::Num(n) => BigRational::from_integer(n.clone().into()),
             _ => unimplemented!(),
         })
     }
