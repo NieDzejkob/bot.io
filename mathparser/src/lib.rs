@@ -243,4 +243,21 @@ mod tests {
             actual: 2,
         }));
     }
+
+    #[test]
+    fn function_lexical_scoping() {
+        let mut ctx = ConcreteContext::new();
+        ctx.0.insert("f".to_owned(), SymbolValue::Func(FuncDef {
+            argument_names: vec!["x"],
+            value_expr: ExprParser::new().parse("x*x").unwrap(),
+        }));
+        ctx.0.insert("x".to_owned(), SymbolValue::Num(BigRational::from_integer(7.into())));
+        let expr = ExprParser::new().parse("f(3) + x").unwrap();
+        let mut scoring_calls = vec![
+            ("f", vec![BigRational::from_integer(3.into())]),
+        ];
+        let value = expr.evaluate(&ctx, &mut test_scoring(&mut scoring_calls));
+        assert_eq!(value, Ok(BigRational::from_integer(16.into())));
+        assert!(scoring_calls.is_empty());
+    }
 }
