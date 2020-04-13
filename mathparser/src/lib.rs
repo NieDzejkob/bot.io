@@ -5,7 +5,10 @@ use std::collections::HashMap;
 
 #[macro_use] extern crate lalrpop_util;
 lalrpop_mod!(grammar);
-pub use grammar::ExprParser;
+use lalrpop_util::{ParseError, lexer::Token};
+pub fn parse_expr(input: &str) -> Result<Expr<'_>, ParseError<usize, Token<'_>, &'static str>> {
+    grammar::ExprParser::new().parse(input)
+}
 
 pub struct FuncDef<'a> {
     argument_names: Vec<&'a str>,
@@ -165,10 +168,7 @@ mod tests {
     }
 
     fn with_ctx<'a>(ctx: &ConcreteContext<'_>, expr: &'a str) -> Result<BigRational, EvalError> {
-        let expr = ExprParser::new()
-            .parse(expr)
-            .unwrap();
-        expr.evaluate(ctx, &mut |_, _| ())
+        parse_expr(expr).unwrap().evaluate(ctx, &mut |_, _| ())
     }
 
     fn test_scoring<'a>(expected: &'a mut Vec<(&'static str, Vec<BigRational>)>)
@@ -213,10 +213,10 @@ mod tests {
         let mut ctx = ConcreteContext::new();
         ctx.0.insert("f".to_owned(), SymbolValue::Func(FuncDef {
             argument_names: vec!["x"],
-            value_expr: ExprParser::new().parse("x*x").unwrap(),
+            value_expr: parse_expr("x*x").unwrap(),
         }));
 
-        let expr = ExprParser::new().parse("f(3) + 4").unwrap();
+        let expr = parse_expr("f(3) + 4").unwrap();
         let mut scoring_calls = vec![
             ("f", vec![BigRational::from_integer(3.into())]),
         ];
@@ -231,10 +231,10 @@ mod tests {
         let mut ctx = ConcreteContext::new();
         ctx.0.insert("f".to_owned(), SymbolValue::Func(FuncDef {
             argument_names: vec!["x"],
-            value_expr: ExprParser::new().parse("x*x").unwrap(),
+            value_expr: parse_expr("x*x").unwrap(),
         }));
 
-        let expr = ExprParser::new().parse("f(2, f(7))").unwrap();
+        let expr = parse_expr("f(2, f(7))").unwrap();
         let mut scoring_calls = vec![];
         let value = expr.evaluate(&ctx, &mut test_scoring(&mut scoring_calls));
         assert_eq!(value, Err(EvalError::Arity {
@@ -249,10 +249,10 @@ mod tests {
         let mut ctx = ConcreteContext::new();
         ctx.0.insert("f".to_owned(), SymbolValue::Func(FuncDef {
             argument_names: vec!["x"],
-            value_expr: ExprParser::new().parse("x*x").unwrap(),
+            value_expr: parse_expr("x*x").unwrap(),
         }));
         ctx.0.insert("x".to_owned(), SymbolValue::Num(BigRational::from_integer(7.into())));
-        let expr = ExprParser::new().parse("f(3) + x").unwrap();
+        let expr = parse_expr("f(3) + x").unwrap();
         let mut scoring_calls = vec![
             ("f", vec![BigRational::from_integer(3.into())]),
         ];
