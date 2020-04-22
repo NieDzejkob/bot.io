@@ -93,6 +93,14 @@ impl<'a> Expr<'a> {
                 func.value_expr.evaluate(&fn_ctx, scoring_callback)?
             }
             Expr::Ident(id) => ctx.get_variable(id)?.clone(),
+            Expr::If(cond, then, otherwise) => {
+                let expr = if cond.evaluate(ctx, scoring_callback)? {
+                    then
+                } else {
+                    otherwise
+                };
+                expr.evaluate(ctx, scoring_callback)?
+            }
             Expr::BinOp(lhs, op, rhs) => {
                 let lhs = lhs.evaluate(ctx, scoring_callback)?;
                 let rhs = rhs.evaluate(ctx, scoring_callback)?;
@@ -109,7 +117,27 @@ impl<'a> Expr<'a> {
             }
             Expr::Neg(e) => -e.evaluate(ctx, scoring_callback)?,
             Expr::Num(n) => BigRational::from_integer(n.clone().into()),
-            _ => unimplemented!(),
+        })
+    }
+}
+
+impl<'a> Pred<'a> {
+    pub fn evaluate<'ctx>(&self,
+        ctx: &'ctx ConcreteContext<'a>,
+        scoring_callback: &mut impl FnMut(&str, &[BigRational]),
+    ) -> Result<bool, EvalError> {
+        Ok(match self {
+            Pred::Cmp(lhs, op, rhs) => {
+                let lhs = lhs.evaluate(ctx, scoring_callback)?;
+                let rhs = rhs.evaluate(ctx, scoring_callback)?;
+                match op {
+                    Cmp::Eq => lhs == rhs,
+                    Cmp::Lt => lhs < rhs,
+                    Cmp::Le => lhs <= rhs,
+                    Cmp::Gt => lhs > rhs,
+                    Cmp::Ge => lhs >= rhs,
+                }
+            }
         })
     }
 }
@@ -162,6 +190,10 @@ pub enum Pred<'a> {
 mod tests {
     use super::*;
 
+    fn ratio(numer: i128, denom: i128) -> BigRational {
+        BigRational::new(numer.into(), denom.into())
+    }
+
     fn empty_ctx(expr: &str) -> Result<BigRational, EvalError> {
         let ctx = ConcreteContext::new();
         with_ctx(&ctx, expr)
@@ -183,17 +215,37 @@ mod tests {
 
     #[test]
     fn it_works() {
-        assert_eq!(empty_ctx("2 + 2"), Ok(BigRational::from_integer(4.into())));
+        assert_eq!(empty_ctx("2 + 2"), Ok(ratio(4, 1)));
     }
 
     #[test]
     fn handles_negatives() {
-        assert_eq!(empty_ctx("2 + -3"), Ok(BigRational::from_integer((-1).into())));
+        assert_eq!(empty_ctx("2 + -3"), Ok(ratio(-1, 1)));
     }
 
     #[test]
     fn div0_doesnt_explode() {
         assert_eq!(empty_ctx("2 / 0"), Err(EvalError::DivisionByZero));
+    }
+
+    #[test]
+    fn if_needs_parentheses() {
+        assert!(parse_expr("2 + if 1 = 1 then 1 else 0").is_err());
+    }
+
+    #[test]
+    fn reduced_fractions_equal() {
+        assert_eq!(empty_ctx("if 2/3 = 4/6 then 1 else 0"), Ok(ratio(1, 1)));
+    }
+
+    #[test]
+    fn false_conditions() {
+        assert_eq!(empty_ctx("if 3 < 2 then 1 else 0"), Ok(ratio(0, 1)));
+    }
+
+    #[test]
+    fn unevaluated_branch_no_error() {
+        assert_eq!(empty_ctx("if 0 = 1 then 3 / 0 else 7"), Ok(ratio(7, 1)));
     }
 
     #[test]
@@ -204,8 +256,8 @@ mod tests {
     #[test]
     fn handles_variable() {
         let mut ctx = ConcreteContext::new();
-        ctx.0.insert("x".to_owned(), SymbolValue::Num(BigRational::from_integer(7.into())));
-        assert_eq!(with_ctx(&ctx, "3 * x"), Ok(BigRational::from_integer(21.into())));
+        ctx.0.insert("x".to_owned(), SymbolValue::Num(ratio(7, 1)));
+        assert_eq!(with_ctx(&ctx, "3 * x"), Ok(ratio(21, 1)));
     }
 
     #[test]
@@ -218,11 +270,11 @@ mod tests {
 
         let expr = parse_expr("f(3) + 4").unwrap();
         let mut scoring_calls = vec![
-            ("f", vec![BigRational::from_integer(3.into())]),
+            ("f", vec![ratio(3, 1)]),
         ];
 
         let value = expr.evaluate(&ctx, &mut test_scoring(&mut scoring_calls));
-        assert_eq!(value, Ok(BigRational::from_integer(13.into())));
+        assert_eq!(value, Ok(ratio(13, 1)));
         assert!(scoring_calls.is_empty());
     }
 
@@ -251,13 +303,13 @@ mod tests {
             argument_names: vec!["x"],
             value_expr: parse_expr("x*x").unwrap(),
         }));
-        ctx.0.insert("x".to_owned(), SymbolValue::Num(BigRational::from_integer(7.into())));
+        ctx.0.insert("x".to_owned(), SymbolValue::Num(ratio(7, 1)));
         let expr = parse_expr("f(3) + x").unwrap();
         let mut scoring_calls = vec![
-            ("f", vec![BigRational::from_integer(3.into())]),
+            ("f", vec![ratio(3, 1)]),
         ];
         let value = expr.evaluate(&ctx, &mut test_scoring(&mut scoring_calls));
-        assert_eq!(value, Ok(BigRational::from_integer(16.into())));
+        assert_eq!(value, Ok(ratio(16, 1)));
         assert!(scoring_calls.is_empty());
     }
 }
