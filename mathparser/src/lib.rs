@@ -6,8 +6,16 @@ use std::collections::HashMap;
 #[macro_use] extern crate lalrpop_util;
 lalrpop_mod!(grammar);
 use lalrpop_util::{ParseError, lexer::Token};
-pub fn parse_expr(input: &str) -> Result<Expr<'_>, ParseError<usize, Token<'_>, &'static str>> {
+pub fn parse_expr(input: &str)
+    -> Result<Expr<'_>, ParseError<usize, Token<'_>, &'static str>>
+{
     grammar::ExprParser::new().parse(input)
+}
+
+pub fn parse_command(input: &str)
+    -> Result<Command<'_>, ParseError<usize, Token<'_>, &'static str>>
+{
+    grammar::CommandParser::new().parse(input)
 }
 
 pub struct FuncDef<'a> {
