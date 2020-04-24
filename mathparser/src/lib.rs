@@ -5,16 +5,15 @@ use std::collections::HashMap;
 
 #[macro_use] extern crate lalrpop_util;
 lalrpop_mod!(grammar);
-use lalrpop_util::{ParseError, lexer::Token};
-pub fn parse_expr(input: &str)
-    -> Result<Expr<'_>, ParseError<usize, Token<'_>, &'static str>>
-{
+
+use lalrpop_util::lexer::Token;
+pub type ParseError<'a> = lalrpop_util::ParseError<usize, Token<'a>, &'static str>;
+
+pub fn parse_expr(input: &str) -> Result<Expr<'_>, ParseError<'_>> {
     grammar::ExprParser::new().parse(input)
 }
 
-pub fn parse_command(input: &str)
-    -> Result<Command<'_>, ParseError<usize, Token<'_>, &'static str>>
-{
+pub fn parse_command(input: &str) -> Result<Command<'_>, ParseError<'_>> {
     grammar::CommandParser::new().parse(input)
 }
 
