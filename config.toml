@@ -1,0 +1,7 @@
+prefix = "$"
+
+[allowed_channels]
+testing_general = 596792078059700256
+
+[admin_users]
+NieDzejkob = 238313704578482176

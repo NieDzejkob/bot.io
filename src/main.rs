@@ -35,11 +35,11 @@ impl ErrorExt for Result<()> {
 
 #[derive(Deserialize)]
 struct Config {
-    token: String,
     prefix: String,
     #[serde(default)]
     database: db::DatabaseConfig,
     allowed_channels: HashMap<String, ChannelId>,
+    admin_users: HashMap<String, UserId>,
 }
 
 impl Config {
@@ -62,6 +62,7 @@ impl EventHandler for Handler {}
 
 fn main() -> Result<()> {
     dotenv::dotenv().ok();
+    let token = dotenv::var("DISCORD_TOKEN").context("DISCORD_TOKEN must be set")?;
 
     env_logger::init();
     let config = Config::read_from_file("config.toml")?;
@@ -69,7 +70,7 @@ fn main() -> Result<()> {
     log::info!("Connected to database");
     let handler = Handler;
 
-    let mut client = Client::new(&config.token, handler).context("Couldn't create client")?;
+    let mut client = Client::new(token, handler).context("Couldn't create client")?;
     client.with_framework(
         StandardFramework::new()
         .configure(|c| c
