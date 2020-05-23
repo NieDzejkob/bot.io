@@ -1,4 +1,5 @@
 use anyhow::{Context as _, Result};
+use diesel::prelude::*;
 use serde::Deserialize;
 use serenity::prelude::*;
 use serenity::model::prelude::*;
@@ -11,7 +12,13 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+#[macro_use]
+extern crate diesel;
+
+mod db;
 mod errors;
+mod schema;
+mod models;
 use errors::MathError;
 
 trait ErrorExt {
@@ -30,6 +37,8 @@ impl ErrorExt for Result<()> {
 struct Config {
     token: String,
     prefix: String,
+    #[serde(default)]
+    database: db::DatabaseConfig,
     allowed_channels: HashMap<String, ChannelId>,
 }
 
@@ -52,7 +61,12 @@ struct Handler;
 impl EventHandler for Handler {}
 
 fn main() -> Result<()> {
+    dotenv::dotenv().ok();
+
+    env_logger::init();
     let config = Config::read_from_file("config.toml")?;
+    let db = db::connect(&config.database)?;
+    log::info!("Connected to database");
     let handler = Handler;
 
     let mut client = Client::new(&config.token, handler).context("Couldn't create client")?;
@@ -69,8 +83,15 @@ fn main() -> Result<()> {
                 eprintln!("Message {:?} triggered an error: {:?}", msg.content, why);
             }
         })
-        .normal_message(|ctx, msg| {
-            if !msg.is_private() || msg.author.bot {
+        .unrecognised_command(|ctx, msg, cmd| {
+            // TODO: suggest a similar command
+            log::warn!("Unrecognized command: {}", cmd);
+        })
+        .normal_message({
+            let prefix = config.prefix.clone();
+        move |ctx, msg| {
+            if !msg.is_private() || msg.author.bot
+                || msg.content.starts_with(&prefix) {
                 return;
             }
 
@@ -86,20 +107,25 @@ fn main() -> Result<()> {
                 }
                 _ => (),
             }
-        })
+        }})
         .group(&IOGAME_GROUP));
     client.data.write().insert::<Config>(config);
+    client.data.write().insert::<db::DB>(db);
     client.start()?;
     Ok(())
 }
 
 #[command]
-fn ping(ctx: &mut Context, msg: &Message) -> CommandResult {
-    msg.channel_id.say(&ctx.http, "pong!")?;
+fn problems(ctx: &mut Context, msg: &Message) -> CommandResult {
+    use schema::problems::dsl::*;
+
+    let results = problems.load::<models::Problem>(&db::get_connection(ctx)?)
+        .context("Fetch problems from database")?;
+    msg.author.dm(ctx, |m| m.content(format!("{} problems available", results.len())))?;
 
     Ok(())
 }
 
 #[group("iogame")]
-#[commands(ping)]
+#[commands(problems)]
 struct IOGame;
