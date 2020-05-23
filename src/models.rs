@@ -1,6 +1,13 @@
+use diesel_derive_newtype::DieselNewType;
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, DieselNewType, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ProblemId(i32);
+
 #[derive(Queryable)]
 pub struct Problem {
-    pub id: i32,
+    pub id: ProblemId,
     pub name: String,
     pub description: String,
     pub difficulty: String,
