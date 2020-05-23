@@ -84,7 +84,7 @@ fn main() -> Result<()> {
                 eprintln!("Message {:?} triggered an error: {:?}", msg.content, why);
             }
         })
-        .unrecognised_command(|ctx, msg, cmd| {
+        .unrecognised_command(|_ctx, _msg, cmd| {
             // TODO: suggest a similar command
             log::warn!("Unrecognized command: {}", cmd);
         })
