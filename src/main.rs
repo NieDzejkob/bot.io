@@ -15,20 +15,21 @@ use std::path::Path;
 #[macro_use]
 extern crate diesel;
 
-mod db;
-mod errors;
-mod schema;
-mod models;
-use errors::MathError;
+pub mod db;
+pub mod errors;
+pub mod eval;
+pub mod schema;
+pub mod models;
+pub mod interactive;
 
 trait ErrorExt {
     fn log_error(&self);
 }
 
-impl ErrorExt for Result<()> {
+impl<T> ErrorExt for Result<T> {
     fn log_error(&self) {
         if let Err(why) = self {
-            eprintln!("An error occured: {}", why);
+            log::error!("An error occured: {}", why);
         }
     }
 }
@@ -81,7 +82,7 @@ fn main() -> Result<()> {
             } else { Ok(()) });
 
             if let Err(why) = result {
-                eprintln!("Message {:?} triggered an error: {:?}", msg.content, why);
+                log::error!("Message {:?} triggered an error: {:?}", msg.content, why);
             }
         })
         .unrecognised_command(|_ctx, _msg, cmd| {
@@ -96,17 +97,8 @@ fn main() -> Result<()> {
                 return;
             }
 
-            let command = mathparser::parse_command(&msg.content);
-            use mathparser::Command;
-            match command {
-                Ok(Command::Expr(e)) => {
-                    dbg!(e);
-                }
-                Err(why) => {
-                    let error: MathError = why.into();
-                    error.send_to_user(ctx, &msg.author, &msg.content).log_error();
-                }
-                _ => (),
+            if let Err(why) = crate::interactive::handle_message(ctx, msg) {
+                log::error!("Message {:?} triggered an error: {:?}", msg.content, why);
             }
         }})
         .group(&IOGAME_GROUP));
