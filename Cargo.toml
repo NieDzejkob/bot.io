@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1"
+ctrlc = { version = "3.1.4", features = ["termination"] }
 diesel = { version = "1.0", features = ["postgres", "r2d2"] }
 diesel-derive-newtype = "0.1"
 dotenv = "0.9"

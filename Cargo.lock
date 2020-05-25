@@ -238,6 +238,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctrlc"
+version = "3.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "nix 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "diesel"
 version = "1.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -634,6 +643,7 @@ name = "iobot"
 version = "0.1.0"
 dependencies = [
  "anyhow 1.0.28 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ctrlc 3.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "diesel 1.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "diesel-derive-newtype 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -836,6 +846,18 @@ dependencies = [
 name = "new_debug_unreachable"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "nix"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.52 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.69 (registry+https://github.com/rust-lang/crates.io-index)",
+ "void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "num-bigint"
@@ -1889,6 +1911,11 @@ version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "void"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "want"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2094,6 +2121,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum crc32fast 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ba125de2af0df55319f41944744ad91c71113bf74a4646efff39afe1f6842db1"
 "checksum crossbeam-utils 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)" = "c3c7c73a2d1e9fc0886a08b93e98eb643461230d5f1925e4036204d5f2e261a8"
 "checksum ct-logs 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4d3686f5fa27dbc1d76c751300376e167c5a43387f44bb451fd1c24776e49113"
+"checksum ctrlc 3.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "7a4ba686dff9fa4c1c9636ce1010b0cf98ceb421361b0bb3d6faeec43bd217a7"
 "checksum diesel 1.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "33d7ca63eb2efea87a7f56a283acc49e2ce4b2bd54adf7465dc1d81fef13d8fc"
 "checksum diesel-derive-newtype 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e844e8e6f65dcf27aa0b97d4234f974d93dfbf56816033d71b5e0c7eb701709f"
 "checksum diesel_derives 1.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "45f5098f628d02a7a0f68ddba586fb61e80edec3bdc1be3b921f4ceec60858d3"
@@ -2159,6 +2187,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum miow 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8c1f2f3b1cf331de6896aabf6e9d55dca90356cc9960cca7eaaf408a355ae919"
 "checksum net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "42550d9fb7b6684a6d404d9fa7250c2eb2646df731d1c06afc06dcee9e1bcf88"
 "checksum new_debug_unreachable 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54"
+"checksum nix 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)" = "50e4785f2c3b7589a0d0c1dd60285e1188adac4006e8abd6dd578e1567027363"
 "checksum num-bigint 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "090c7f9998ee0ff65aa5b723e4009f7b217707f1fb5ea551329cc4d6231fb304"
 "checksum num-integer 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "3f6ea62e9d81a77cd3ee9a2a5b9b609447857f3d358704331e4ef39eb247fcba"
 "checksum num-rational 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)" = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
@@ -2279,6 +2308,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum uwl 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f4bf03e0ca70d626ecc4ba6b0763b934b6f2976e8c744088bb3c1d646fbb1ad0"
 "checksum vcpkg 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "3fc439f2794e98976c88a2a2dafce96b930fe8010b0a256b3c2199a773933168"
 "checksum version_check 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)" = "078775d0255232fb988e6fccf26ddc9d1ac274299aaedcedce21c6f72cc533ce"
+"checksum void 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "6a02e4885ed3bc0f2de90ea6dd45ebcbb66dacffe03547fadbb0eeae2770887d"
 "checksum want 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1ce8a968cb1cd110d136ff8b819a556d6fb6d919363c61534f6860c7eb172ba0"
 "checksum wasi 0.9.0+wasi-snapshot-preview1 (registry+https://github.com/rust-lang/crates.io-index)" = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 "checksum wasm-bindgen 0.2.60 (registry+https://github.com/rust-lang/crates.io-index)" = "2cc57ce05287f8376e998cbddfb4c8cb43b84a7ec55cf4551d7c00eef317a47f"

@@ -10,6 +10,7 @@ use serenity::framework::standard::{
 };
 use std::collections::HashMap;
 use std::fs;
+use std::sync::Arc;
 use std::path::Path;
 
 #[macro_use]
@@ -104,6 +105,13 @@ fn main() -> Result<()> {
         .group(&IOGAME_GROUP));
     client.data.write().insert::<Config>(config);
     client.data.write().insert::<db::DB>(db);
+
+    let shard_manager = Arc::clone(&client.shard_manager);
+    ctrlc::set_handler(move || {
+        log::info!("Shutting down...");
+        shard_manager.lock().shutdown_all();
+    }).context("Setting the Ctrl-C handler")?;
+
     client.start()?;
     Ok(())
 }
