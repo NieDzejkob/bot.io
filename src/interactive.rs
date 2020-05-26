@@ -73,34 +73,32 @@ pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
     }
 }
 
-pub fn start_command(
-    ctx: &mut Context,
-    msg: &Message,
-    cmd: InteractiveCommand,
-) {
-    let mut lock = ctx.data.write();
-    let entry = lock.get_mut::<InteractionStates>().unwrap()
-        .entry(msg.author.id);
+impl InteractiveCommand {
+    pub fn start(self, ctx: &mut Context, msg: &Message) {
+        let mut lock = ctx.data.write();
+        let entry = lock.get_mut::<InteractionStates>().unwrap()
+            .entry(msg.author.id);
 
-    use std::collections::hash_map::Entry::*;
-    match entry {
-        Occupied(e) => {
-            let state = Arc::clone(e.get());
-            let mut state = state.lock();
-            drop(lock);
-            state.pending_abort = Some(cmd);
-            msg.author.dm(&ctx, |m| m.content(&state.command.abort_message))
-                .context("Send abort message").log_error();
-        }
-        Vacant(e) => {
-            let state = Arc::new(Mutex::new(InteractionState {
-                command: cmd,
-                pending_abort: None,
-            }));
-            e.insert(Arc::clone(&state));
-            let mut state = state.lock();
-            drop(lock);
-            state.command.generator.resume_with(String::new());
+        use std::collections::hash_map::Entry::*;
+        match entry {
+            Occupied(e) => {
+                let state = Arc::clone(e.get());
+                let mut state = state.lock();
+                drop(lock);
+                state.pending_abort = Some(self);
+                msg.author.dm(&ctx, |m| m.content(&state.command.abort_message))
+                    .context("Send abort message").log_error();
+            }
+            Vacant(e) => {
+                let state = Arc::new(Mutex::new(InteractionState {
+                    command: self,
+                    pending_abort: None,
+                }));
+                e.insert(Arc::clone(&state));
+                let mut state = state.lock();
+                drop(lock);
+                state.command.generator.resume_with(String::new());
+            }
         }
     }
 }
