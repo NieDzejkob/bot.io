@@ -6,6 +6,7 @@ use serenity::model::prelude::*;
 use serenity::framework::standard::{
     StandardFramework,
     CommandResult,
+    DispatchError, Reason,
     macros::{command, group},
 };
 use std::collections::HashSet;
@@ -16,6 +17,7 @@ use std::path::Path;
 #[macro_use]
 extern crate diesel;
 
+pub mod admin;
 pub mod config;
 pub mod db;
 pub mod errors;
@@ -103,7 +105,16 @@ fn main() -> Result<()> {
                 log::error!("Message {:?} triggered an error: {:?}", msg.content, why);
             }
         }})
-        .group(&IOGAME_GROUP));
+        .on_dispatch_error(|ctx, msg, why| {
+            match why {
+                DispatchError::CheckFailed(_, Reason::User(reason)) => {
+                    msg.reply(&ctx, reason);
+                }
+                _ => {}
+            }
+        })
+        .group(&IOGAME_GROUP)
+        .group(&admin::ADMIN_GROUP));
     client.data.write().insert::<Config>(config);
     client.data.write().insert::<db::DB>(db);
 
@@ -128,6 +139,6 @@ fn problems(ctx: &mut Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
-#[group("iogame")]
+#[group]
 #[commands(problems)]
 struct IOGame;
