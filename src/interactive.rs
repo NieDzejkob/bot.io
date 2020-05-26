@@ -50,6 +50,7 @@ pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
                 }
                 "n" | "no" => {}
                 _ => {
+                    state.pending_abort = Some(next_command);
                     msg.author.dm(&ctx, |m| m.content(format!(
                         "Please answer with `yes` or `no`. {}",
                         state.command.abort_message

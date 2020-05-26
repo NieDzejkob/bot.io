@@ -129,6 +129,7 @@ fn main() -> Result<()> {
         .group(&admin::ADMIN_GROUP));
     client.data.write().insert::<Config>(config);
     client.data.write().insert::<db::DB>(db);
+    client.data.write().insert::<interactive::InteractionStates>(HashMap::new());
 
     let shard_manager = Arc::clone(&client.shard_manager);
     ctrlc::set_handler(move || {
