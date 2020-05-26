@@ -1,9 +1,4 @@
-use serenity::prelude::*;
-use serenity::model::prelude::*;
-use serenity::framework::standard::{
-    Args, CommandResult,
-    macros::command,
-};
+use crate::prelude::*;
 
 #[command("newproblem")]
 #[aliases("addproblem")]

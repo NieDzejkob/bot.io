@@ -7,17 +7,14 @@
 // (After all, where would you return it inside the generator?)
 // We pass a dummy value to execute the code before the first yield.
 
-use anyhow::{Context as _};
+use crate::prelude::*;
+use crate::ErrorExt;
 use genawaiter::{
     GeneratorState::*,
     sync::GenBoxed,
 };
-use serenity::prelude::*;
-use serenity::model::prelude::*;
-use serenity::framework::standard::CommandResult;
 use std::collections::HashMap;
 use std::sync::Arc;
-use crate::ErrorExt;
 
 pub struct InteractiveCommand {
     pub generator: GenBoxed<(), String>,

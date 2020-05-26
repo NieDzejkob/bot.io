@@ -1,8 +1,6 @@
-use anyhow::{Context as _, Result};
-use serenity::prelude::*;
-use serenity::model::prelude::*;
-use mathparser::ParseError;
+use crate::prelude::*;
 use crate::Config;
+use mathparser::ParseError;
 
 pub struct MathError {
     span: Option<(usize, usize)>,

@@ -1,15 +1,11 @@
-use anyhow::{Context as _, Result};
 use diesel::prelude::*;
 use serde::Deserialize;
-use serenity::prelude::*;
-use serenity::model::prelude::*;
 use serenity::framework::standard::{
     StandardFramework,
-    CommandResult,
     DispatchError, Reason,
-    macros::{command, group},
+    macros::group,
 };
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::sync::Arc;
 use std::path::Path;
@@ -25,6 +21,21 @@ pub mod eval;
 pub mod schema;
 pub mod models;
 pub mod interactive;
+
+pub mod prelude {
+    pub use anyhow::{Context as _, Result};
+    pub use genawaiter::{sync::Gen, sync_producer};
+    pub use serenity::prelude::*;
+    pub use serenity::model::prelude::*;
+    pub use serenity::framework::standard::{
+        Args, CommandResult,
+        macros::command,
+    };
+
+    pub use crate::interactive::InteractiveCommand;
+}
+
+use prelude::*;
 
 trait ErrorExt {
     fn log_error(&self);
@@ -108,7 +119,8 @@ fn main() -> Result<()> {
         .on_dispatch_error(|ctx, msg, why| {
             match why {
                 DispatchError::CheckFailed(_, Reason::User(reason)) => {
-                    msg.reply(&ctx, reason);
+                    msg.reply(&ctx, reason)
+                        .context("Send permission error message").log_error();
                 }
                 _ => {}
             }

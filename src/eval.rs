@@ -1,9 +1,6 @@
 //! Handles formulas sent to the bot.
 
-use anyhow::{Context as _};
-use serenity::prelude::*;
-use serenity::model::prelude::*;
-use serenity::framework::standard::CommandResult;
+use crate::prelude::*;
 use crate::errors::MathError;
 
 pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
