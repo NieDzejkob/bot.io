@@ -8,7 +8,7 @@ use serenity::framework::standard::{
     CommandResult,
     macros::{command, group},
 };
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fs;
 use std::sync::Arc;
 use std::path::Path;
@@ -16,6 +16,7 @@ use std::path::Path;
 #[macro_use]
 extern crate diesel;
 
+pub mod config;
 pub mod db;
 pub mod errors;
 pub mod eval;
@@ -40,8 +41,8 @@ struct Config {
     prefix: String,
     #[serde(default)]
     database: db::DatabaseConfig,
-    allowed_channels: HashMap<String, ChannelId>,
-    admin_users: HashMap<String, UserId>,
+    #[serde(deserialize_with="config::id_list")]
+    admin_users: HashSet<UserId>,
 }
 
 impl Config {
