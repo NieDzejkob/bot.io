@@ -24,20 +24,22 @@ pub mod interactive;
 
 pub mod prelude {
     pub use anyhow::{Context as _, Result};
-    pub use genawaiter::{sync::Gen, sync_producer};
+    pub use genawaiter::{sync::Gen, sync_producer, yield_};
     pub use serenity::prelude::*;
     pub use serenity::model::prelude::*;
     pub use serenity::framework::standard::{
         Args, CommandResult,
         macros::command,
     };
+    pub use serenity::utils::{Color, MessageBuilder};
 
-    pub use crate::interactive::InteractiveCommand;
+    pub use crate::interactive::{ContextExt, InteractiveCommand};
+    pub use crate::ErrorExt;
 }
 
 use prelude::*;
 
-trait ErrorExt {
+pub trait ErrorExt {
     fn log_error(&self);
 }
 

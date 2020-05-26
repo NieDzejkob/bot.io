@@ -8,10 +8,13 @@
 // We pass a dummy value to execute the code before the first yield.
 
 use crate::prelude::*;
-use crate::ErrorExt;
 use genawaiter::{
     GeneratorState::*,
     sync::GenBoxed,
+};
+use serenity::{
+    cache::CacheRwLock,
+    http::{Http, CacheHttp},
 };
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -98,5 +101,39 @@ impl InteractiveCommand {
                 state.command.generator.resume_with(String::new());
             }
         }
+    }
+}
+
+// serenity::CacheAndHttp is nonexhaustive, and a tuple can't own the Arcs, so we need to roll our
+// own struct for this
+pub struct CacheAndHttp {
+    cache: CacheRwLock,
+    http: Arc<Http>,
+}
+
+impl CacheHttp for &CacheAndHttp {
+    fn http(&self) -> &Http {
+        &self.http
+    }
+
+    fn cache(&self) -> Option<&CacheRwLock> {
+        Some(&self.cache)
+    }
+}
+
+// TODO: Return a ChannelId instead of the User when create_private_channel queries the cache.
+pub trait ContextExt {
+    /// For use in an interactive command. Prepares a cut-down alternative to
+    /// `(&mut Context, &Message)` that's unencumbered by lifetimes and can be moved into the
+    /// generator.
+    fn minify(&self, msg: &Message) -> (CacheAndHttp, User);
+}
+
+impl ContextExt for Context {
+    fn minify(&self, msg: &Message) -> (CacheAndHttp, User) {
+        (CacheAndHttp {
+            cache: self.cache.clone(),
+            http: self.http.clone(),
+        }, msg.author.clone())
     }
 }

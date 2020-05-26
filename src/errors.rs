@@ -43,8 +43,6 @@ impl From<ParseError<'_>> for MathError {
 
 impl MathError {
     pub fn send_to_user(&self, ctx: &Context, user: &User, input: &str) -> Result<()> {
-        use serenity::utils::{Color, MessageBuilder};
-
         user.dm(ctx, |m| m.embed(|e| {
             if let Some((left, right)) = self.span {
                 let codeblock = format!("{}\n{:left$}{:^<size$}", input, "", "",
