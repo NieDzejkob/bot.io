@@ -98,7 +98,7 @@ impl<'a> Expr<'a> {
             Expr::BinOp(lhs, op, rhs) => {
                 let lhs = lhs.evaluate(ctx, scoring_callback)?;
                 let rhs = rhs.evaluate(ctx, scoring_callback)?;
-                match op {
+                match op.0 {
                     BinOp::Add => lhs + rhs,
                     BinOp::Sub => lhs - rhs,
                     BinOp::Mul => lhs * rhs,
@@ -110,7 +110,7 @@ impl<'a> Expr<'a> {
                 }
             }
             Expr::Neg(e) => -e.evaluate(ctx, scoring_callback)?,
-            Expr::Num(n) => BigRational::from_integer(n.clone().into()),
+            Expr::Num(n) => BigRational::from_integer(n.0.clone().into()),
         })
     }
 }

@@ -11,8 +11,10 @@ Spanned<T>: Span<T> = {
     <l:@L> <v:T> <r:@R> => Span(v, (l, r))
 };
 
+BSpanned<T>: BSpan<T> = Boxed<Spanned<T>>;
+
 Tier<Op, NextTier>: Expr<'input> = {
-    Boxed<Tier<Op, NextTier>> Op Boxed<NextTier> => Expr::BinOp(<>),
+    BSpanned<Tier<Op, NextTier>> Spanned<Op> BSpanned<NextTier> => Expr::BinOp(<>),
     NextTier
 };
 
@@ -35,7 +37,7 @@ Cmp: Cmp = {
 
 pub Expr = {
     Product,
-    "if" <Boxed<Pred>> "then" <Boxed<Expr>> "else" <Boxed<Expr>> => Expr::If(<>),
+    "if" <BSpanned<Pred>> "then" <BSpanned<Expr>> "else" <BSpanned<Expr>> => Expr::If(<>),
 };
 
 Product = Tier<ProductOp, Factor>;
@@ -53,15 +55,15 @@ FactorOp: BinOp = {
 };
 
 Neg: Expr<'input> = {
-    "-" <Boxed<Term>> => Expr::Neg(<>),
+    "-" <BSpanned<Term>> => Expr::Neg(<>),
     Term,
 };
 
 Term: Expr<'input> = {
     "(" <Expr> ")",
-    Num => Expr::Num(<>),
+    Spanned<Num> => Expr::Num(<>),
     Spanned<Ident> => Expr::Ident(<>),
-    <id:Spanned<Ident>> "(" <mut params:(<Expr> ",")*> <last:Expr> ")" => {
+    <id:Spanned<Ident>> "(" <mut params:(<Spanned<Expr>> ",")*> <last:Spanned<Expr>> ")" => {
         params.push(last);
         Expr::Func(id, params)
     }

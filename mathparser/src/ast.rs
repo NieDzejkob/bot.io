@@ -31,12 +31,12 @@ pub enum Cmp {
 
 #[derive(Clone, Debug)]
 pub enum Expr<'a> {
-    Func(Span<&'a str>, Vec<Expr<'a>>),
+    Func(Span<&'a str>, Vec<Span<Expr<'a>>>),
     Ident(Span<&'a str>),
-    If(Box<Pred<'a>>, Box<Expr<'a>>, Box<Expr<'a>>),
-    BinOp(Box<Expr<'a>>, BinOp, Box<Expr<'a>>),
-    Neg(Box<Expr<'a>>),
-    Num(BigUint),
+    If(BSpan<Pred<'a>>, BSpan<Expr<'a>>, BSpan<Expr<'a>>),
+    BinOp(BSpan<Expr<'a>>, Span<BinOp>, BSpan<Expr<'a>>),
+    Neg(BSpan<Expr<'a>>),
+    Num(Span<BigUint>),
 }
 
 #[derive(Clone, Debug)]
@@ -56,5 +56,14 @@ impl<T> Span<T> {
 
     pub fn as_ref(&self) -> Span<&T> {
         Span(&self.0, self.1)
+    }
+}
+
+use std::ops::Deref;
+impl<T> Deref for Span<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.0
     }
 }
