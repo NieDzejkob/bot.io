@@ -1,10 +1,10 @@
 #[macro_use] extern crate lalrpop_util;
 lalrpop_mod!(grammar);
 
-mod ast;
+pub mod ast;
 pub mod eval;
 
-pub use ast::*;
+pub use ast::{Expr, Pred, Command};
 
 use lalrpop_util::lexer::Token;
 pub type ParseError<'a> = lalrpop_util::ParseError<usize, Token<'a>, &'static str>;

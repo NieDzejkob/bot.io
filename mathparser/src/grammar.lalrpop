@@ -1,10 +1,14 @@
-use crate::{BinOp, Cmp, Command, Expr, Pred};
+use crate::ast::*;
 use num_bigint::BigUint;
 
 grammar;
 
 Boxed<T>: Box<T> = {
     T => Box::new(<>)
+};
+
+Spanned<T>: Span<T> = {
+    <l:@L> <v:T> <r:@R> => Span(v, (l, r))
 };
 
 Tier<Op, NextTier>: Expr<'input> = {
@@ -17,7 +21,7 @@ pub Command: Command<'input> = {
     Pred => Command::Pred(<>),
 };
 
-pub Pred: Pred<'input> = {
+Pred: Pred<'input> = {
     Expr Cmp Expr => Pred::Cmp(<>)
 };
 
@@ -56,8 +60,8 @@ Neg: Expr<'input> = {
 Term: Expr<'input> = {
     "(" <Expr> ")",
     Num => Expr::Num(<>),
-    Ident => Expr::Ident(<>),
-    <id:Ident> "(" <mut params:(<Expr> ",")*> <last:Expr> ")" => {
+    Spanned<Ident> => Expr::Ident(<>),
+    <id:Spanned<Ident>> "(" <mut params:(<Expr> ",")*> <last:Expr> ")" => {
         params.push(last);
         Expr::Func(id, params)
     }

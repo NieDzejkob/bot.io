@@ -31,8 +31,8 @@ pub enum Cmp {
 
 #[derive(Clone, Debug)]
 pub enum Expr<'a> {
-    Func(&'a str, Vec<Expr<'a>>),
-    Ident(&'a str),
+    Func(Span<&'a str>, Vec<Expr<'a>>),
+    Ident(Span<&'a str>),
     If(Box<Pred<'a>>, Box<Expr<'a>>, Box<Expr<'a>>),
     BinOp(Box<Expr<'a>>, BinOp, Box<Expr<'a>>),
     Neg(Box<Expr<'a>>),
@@ -42,4 +42,19 @@ pub enum Expr<'a> {
 #[derive(Clone, Debug)]
 pub enum Pred<'a> {
     Cmp(Expr<'a>, Cmp, Expr<'a>),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Span<T>(pub T, pub (usize, usize));
+
+pub type BSpan<T> = Box<Span<T>>;
+
+impl<T> Span<T> {
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Span<U> {
+        Span(f(self.0), self.1)
+    }
+
+    pub fn as_ref(&self) -> Span<&T> {
+        Span(&self.0, self.1)
+    }
 }

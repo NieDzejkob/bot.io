@@ -4,8 +4,9 @@ use std::collections::HashMap;
 use crate::ast::*;
 
 pub struct FuncDef<'a> {
-    argument_names: Vec<&'a str>,
-    value_expr: Expr<'a>,
+    pub name: &'a str,
+    pub argument_names: Vec<&'a str>,
+    pub value_expr: Expr<'a>,
 }
 
 pub enum SymbolValue<'a, T> {
@@ -17,27 +18,27 @@ pub struct Context<'a, T>(pub HashMap<String, SymbolValue<'a, T>>);
 pub type ConcreteContext<'a> = Context<'a, BigRational>;
 
 impl<T> Context<'_, T> {
-    pub fn get_variable(&self, name: &str) -> Result<&T, EvalError> {
-        if let Some(value) = self.0.get(name) {
+    pub fn get_variable(&self, name: Span<&str>) -> Result<&T, EvalError> {
+        if let Some(value) = self.0.get(name.0) {
             if let SymbolValue::Num(n) = value {
                 Ok(n)
             } else {
-                Err(EvalError::NotAVariable(name.to_owned()))
+                Err(EvalError::NotAVariable(name.map(ToOwned::to_owned)))
             }
         } else {
-            Err(EvalError::UnknownVariable(name.to_owned()))
+            Err(EvalError::UnknownVariable(name.map(ToOwned::to_owned)))
         }
     }
 
-    pub fn get_function(&self, name: &str) -> Result<&FuncDef<'_>, EvalError> {
-        if let Some(value) = self.0.get(name) {
+    pub fn get_function(&self, name: Span<&str>) -> Result<&FuncDef<'_>, EvalError> {
+        if let Some(value) = self.0.get(name.0) {
             if let SymbolValue::Func(f) = value {
                 Ok(f)
             } else {
-                Err(EvalError::NotAFunction(name.to_owned()))
+                Err(EvalError::NotAFunction(name.map(ToOwned::to_owned)))
             }
         } else {
-            Err(EvalError::UnknownFunction(name.to_owned()))
+            Err(EvalError::UnknownFunction(name.map(ToOwned::to_owned)))
         }
     }
 
@@ -48,12 +49,12 @@ impl<T> Context<'_, T> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum EvalError {
-    UnknownVariable(String),
-    UnknownFunction(String),
-    NotAVariable(String),
-    NotAFunction(String),
+    UnknownVariable(Span<String>),
+    UnknownFunction(Span<String>),
+    NotAVariable(Span<String>),
+    NotAFunction(Span<String>),
     Arity {
-        function: String,
+        function: Span<String>,
         expected: usize,
         actual: usize,
     },
@@ -70,7 +71,7 @@ impl<'a> Expr<'a> {
                 let func = ctx.get_function(id)?;
                 if func.argument_names.len() != args.len() {
                     return Err(EvalError::Arity {
-                        function: id.to_owned(),
+                        function: id.map(ToOwned::to_owned),
                         expected: func.argument_names.len(),
                         actual: args.len(),
                     });
@@ -79,13 +80,13 @@ impl<'a> Expr<'a> {
                 let values = args.iter()
                     .map(|arg| arg.evaluate(ctx, scoring_callback))
                     .collect::<Result<Vec<_>, _>>()?;
-                scoring_callback(id, &values);
+                scoring_callback(id.0, &values);
                 let fn_ctx = Context(func.argument_names.iter().map(|&name| name.to_owned())
                                        .zip(values.into_iter().map(SymbolValue::Num))
                                        .collect());
                 func.value_expr.evaluate(&fn_ctx, scoring_callback)?
             }
-            Expr::Ident(id) => ctx.get_variable(id)?.clone(),
+            &Expr::Ident(id) => ctx.get_variable(id)?.clone(),
             Expr::If(cond, then, otherwise) => {
                 let expr = if cond.evaluate(ctx, scoring_callback)? {
                     then
@@ -200,7 +201,8 @@ mod tests {
 
     #[test]
     fn unknown_variable() {
-        assert_eq!(empty_ctx("3 * x"), Err(EvalError::UnknownVariable("x".to_owned())));
+        assert_eq!(empty_ctx("3 * x"),
+            Err(EvalError::UnknownVariable(Span("x".to_owned(), (4, 5)))));
     }
 
     #[test]
@@ -214,6 +216,7 @@ mod tests {
     fn handles_function() {
         let mut ctx = ConcreteContext::new();
         ctx.0.insert("f".to_owned(), SymbolValue::Func(FuncDef {
+            name: "f",
             argument_names: vec!["x"],
             value_expr: parse_expr("x*x").unwrap(),
         }));
@@ -232,6 +235,7 @@ mod tests {
     fn detects_arity_error_early() {
         let mut ctx = ConcreteContext::new();
         ctx.0.insert("f".to_owned(), SymbolValue::Func(FuncDef {
+            name: "f",
             argument_names: vec!["x"],
             value_expr: parse_expr("x*x").unwrap(),
         }));
@@ -240,16 +244,23 @@ mod tests {
         let mut scoring_calls = vec![];
         let value = expr.evaluate(&ctx, &mut test_scoring(&mut scoring_calls));
         assert_eq!(value, Err(EvalError::Arity {
-            function: "f".to_owned(),
+            function: Span("f".to_owned(), (0, 1)),
             expected: 1,
             actual: 2,
         }));
     }
 
     #[test]
+    fn tracks_location_of_function_calls() {
+        assert_eq!(empty_ctx("1 + foo(2)"),
+            Err(EvalError::UnknownFunction(Span("foo".to_owned(), (4, 7)))));
+    }
+
+    #[test]
     fn function_lexical_scoping() {
         let mut ctx = ConcreteContext::new();
         ctx.0.insert("f".to_owned(), SymbolValue::Func(FuncDef {
+            name: "f",
             argument_names: vec!["x"],
             value_expr: parse_expr("x*x").unwrap(),
         }));
