@@ -24,7 +24,7 @@ pub Command: Command<'input> = {
 };
 
 Pred: Pred<'input> = {
-    Expr Cmp Expr => Pred::Cmp(<>)
+    Spanned<Expr> Spanned<Cmp> Spanned<Expr> => Pred::Cmp(<>)
 };
 
 Cmp: Cmp = {

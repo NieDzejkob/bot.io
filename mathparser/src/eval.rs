@@ -124,7 +124,7 @@ impl<'a> Pred<'a> {
             Pred::Cmp(lhs, op, rhs) => {
                 let lhs = lhs.evaluate(ctx, scoring_callback)?;
                 let rhs = rhs.evaluate(ctx, scoring_callback)?;
-                match op {
+                match op.0 {
                     Cmp::Eq => lhs == rhs,
                     Cmp::Lt => lhs < rhs,
                     Cmp::Le => lhs <= rhs,

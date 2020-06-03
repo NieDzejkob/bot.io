@@ -41,7 +41,7 @@ pub enum Expr<'a> {
 
 #[derive(Clone, Debug)]
 pub enum Pred<'a> {
-    Cmp(Expr<'a>, Cmp, Expr<'a>),
+    Cmp(Span<Expr<'a>>, Span<Cmp>, Span<Expr<'a>>),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
