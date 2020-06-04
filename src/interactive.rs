@@ -120,20 +120,3 @@ impl CacheHttp for &CacheAndHttp {
         Some(&self.cache)
     }
 }
-
-// TODO: Return a ChannelId instead of the User when create_private_channel queries the cache.
-pub trait ContextExt {
-    /// For use in an interactive command. Prepares a cut-down alternative to
-    /// `(&mut Context, &Message)` that's unencumbered by lifetimes and can be moved into the
-    /// generator.
-    fn minify(&self, msg: &Message) -> (CacheAndHttp, User);
-}
-
-impl ContextExt for Context {
-    fn minify(&self, msg: &Message) -> (CacheAndHttp, User) {
-        (CacheAndHttp {
-            cache: self.cache.clone(),
-            http: self.http.clone(),
-        }, msg.author.clone())
-    }
-}

@@ -2,6 +2,7 @@
 lalrpop_mod!(grammar);
 
 pub mod ast;
+pub mod errors;
 pub mod eval;
 
 pub use ast::{Expr, Pred, Command};

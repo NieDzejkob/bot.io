@@ -33,8 +33,9 @@ pub mod prelude {
     };
     pub use serenity::utils::{Color, MessageBuilder};
 
-    pub use crate::interactive::{ContextExt, InteractiveCommand};
+    pub use crate::interactive::InteractiveCommand;
     pub use crate::ErrorExt;
+    pub use crate::errors::MathErrorExt;
 }
 
 use prelude::*;
