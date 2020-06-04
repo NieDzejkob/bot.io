@@ -43,14 +43,16 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                     .and_then(|cmd| cmd.try_into());
                 match function {
                     Ok(FuncDef { .. }) => break formula,
-                    Err(why) => why.send_to_user(&ctx, &user, &formula, "Please enter a correct formula."),
+                    Err(why) => why.send_to_user(&ctx, &user, &formula,
+                                                 "Please try again."),
                 }
             };
             embed.field("Formula", format!("`{}`", formula), true);
 
             user.dm(&ctx, |m| m.embed(|e| {
                 e.clone_from(&embed);
-                e.field("Domain", "`<please enter the domain for this problem>`", true)
+                e.field("Domain", "`<please enter the domain for this problem>`", true);
+                e.footer(|foot| foot.text("TODO: The domain field doesn't actually do anything yet."))
             })).context("Send embed").log_error();
             let domain = yield_!(());
             embed.field("Domain", format!("`{}`", domain), true);
