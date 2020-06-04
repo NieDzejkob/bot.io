@@ -12,5 +12,5 @@ CREATE TABLE problems (
     score_query INT NOT NULL,
     score_guess_correct INT NOT NULL,
     score_guess_incorrect INT NOT NULL,
-    score_submit_incorrent INT NOT NULL
+    score_submit_incorrect INT NOT NULL
 )

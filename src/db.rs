@@ -24,7 +24,7 @@ pub fn connect(config: &DatabaseConfig) -> Result<Pool> {
     pool_builder.build(manager).context("Create database pool")
 }
 
-pub fn get_connection(ctx: &mut Context) -> Result<Connection> {
+pub fn get_connection(ctx: &Context) -> Result<Connection> {
     ctx.data.read().get::<DB>().unwrap().get().context("Get database connection from pool")
 }
 

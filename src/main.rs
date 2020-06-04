@@ -12,6 +12,7 @@ use std::path::Path;
 
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate extension_trait;
+#[macro_use] extern crate strum_macros;
 
 pub mod admin;
 pub mod config;
@@ -40,10 +41,7 @@ pub mod prelude {
 
 use prelude::*;
 
-pub trait ErrorExt {
-    fn log_error(&self);
-}
-
+#[extension_trait(pub)]
 impl<T> ErrorExt for Result<T> {
     fn log_error(&self) {
         if let Err(why) = self {

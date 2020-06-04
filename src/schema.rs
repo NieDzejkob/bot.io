@@ -9,6 +9,6 @@ table! {
         score_query -> Int4,
         score_guess_correct -> Int4,
         score_guess_incorrect -> Int4,
-        score_submit_incorrent -> Int4,
+        score_submit_incorrect -> Int4,
     }
 }
