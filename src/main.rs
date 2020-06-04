@@ -10,8 +10,8 @@ use std::fs;
 use std::sync::Arc;
 use std::path::Path;
 
-#[macro_use]
-extern crate diesel;
+#[macro_use] extern crate diesel;
+#[macro_use] extern crate extension_trait;
 
 pub mod admin;
 pub mod config;

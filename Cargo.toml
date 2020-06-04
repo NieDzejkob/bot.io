@@ -13,6 +13,7 @@ diesel = { version = "1.0", features = ["postgres", "r2d2"] }
 diesel-derive-newtype = "0.1"
 dotenv = "0.9"
 env_logger = "0.7"
+extension-trait = "0.2.1"
 genawaiter = "0.99"
 log = "0.4"
 mathparser = { path = "mathparser" }

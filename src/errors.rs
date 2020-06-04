@@ -1,10 +1,7 @@
 use crate::prelude::*;
 use mathparser::errors::MathError;
 
-pub trait MathErrorExt {
-    fn send_to_user(&self, ctx: &Context, user: &User, input: &str, footer: &str);
-}
-
+#[extension_trait(pub)]
 impl MathErrorExt for MathError {
     fn send_to_user(&self, ctx: &Context, user: &User, input: &str, footer: &str) {
         user.dm(ctx, |m| m.embed(|e| {
