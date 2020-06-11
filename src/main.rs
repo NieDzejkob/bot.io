@@ -25,7 +25,7 @@ pub mod interactive;
 
 pub mod prelude {
     pub use anyhow::{Context as _, Result};
-    pub use genawaiter::{sync::Gen, sync_producer, yield_};
+    pub use genawaiter::sync::Gen;
     pub use serenity::prelude::*;
     pub use serenity::model::prelude::*;
     pub use serenity::framework::standard::{

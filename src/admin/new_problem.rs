@@ -51,7 +51,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     let user = msg.author.clone();
     let maybe_name = args.remains().map(|s| s.to_owned());
     InteractiveCommand {
-        generator: Gen::new_boxed(sync_producer!({
+        generator: Gen::new_boxed(|co| async move {
             let mut embed = serenity::builder::CreateEmbed::default();
             embed.color(Color::BLUE);
             let name = match maybe_name {
@@ -61,7 +61,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                         e.clone_from(&embed);
                         e.title("`<name?>`")
                     })).context("Send embed").log_error();
-                    yield_!(())
+                    co.yield_(()).await
                 }
             };
 
@@ -71,14 +71,14 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 e.clone_from(&embed);
                 e.description("`<description?>`")
             })).context("Send embed").log_error();
-            let description = yield_!(());
+            let description = co.yield_(()).await;
             embed.description(&description);
 
             user.dm(&ctx, |m| m.embed(|e| {
                 e.clone_from(&embed);
                 e.field("Difficulty", "`<difficulty?>`", false)
             })).context("Send embed").log_error();
-            let difficulty = yield_!(());
+            let difficulty = co.yield_(()).await;
             embed.field("Difficulty", &difficulty, false);
 
             user.dm(&ctx, |m| m.embed(|e| {
@@ -86,7 +86,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 e.field("Formula", "`<formula?>`", true)
             })).context("Send embed").log_error();
             let formula = loop {
-                let formula = yield_!(());
+                let formula = co.yield_(()).await;
                 let function = parse_command(&formula)
                     .map_err(From::from)
                     .and_then(|cmd| cmd.try_into());
@@ -103,7 +103,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 e.field("Domain", "`<domain?>`", true);
                 e.footer(|foot| foot.text("TODO: The domain field doesn't actually do anything yet."))
             })).context("Send embed").log_error();
-            let domain = yield_!(());
+            let domain = co.yield_(()).await;
             embed.field("Domain", format!("`{}`", domain), true);
 
             use ScoringFactor::*;
@@ -135,7 +135,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 })).context("Send embed").log_error();
 
                 loop {
-                    let mut command = yield_!(());
+                    let command = co.yield_(()).await;
                     if command == "done" {
                         break 'scoring_loop;
                     }
@@ -178,7 +178,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 e.footer(|foot| foot.text("Your problem has been created!"));
                 e.color(Color::DARK_GREEN)
             })).context("Send embed").log_error();
-        })),
+        }),
         abort_message: "Do you want to abort creating this problem?".to_owned(),
     }.start(rctx, msg);
     Ok(())
