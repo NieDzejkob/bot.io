@@ -12,10 +12,6 @@ use genawaiter::{
     GeneratorState::*,
     sync::{Co, GenBoxed},
 };
-use serenity::{
-    cache::CacheRwLock,
-    http::{Http, CacheHttp},
-};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -125,22 +121,5 @@ impl InteractiveCommand {
                 state.command.generator.resume_with(Event::Start);
             }
         }
-    }
-}
-
-// serenity::CacheAndHttp is nonexhaustive, and a tuple can't own the Arcs, so we need to roll our
-// own struct for this
-pub struct CacheAndHttp {
-    cache: CacheRwLock,
-    http: Arc<Http>,
-}
-
-impl CacheHttp for &CacheAndHttp {
-    fn http(&self) -> &Http {
-        &self.http
-    }
-
-    fn cache(&self) -> Option<&CacheRwLock> {
-        Some(&self.cache)
     }
 }
