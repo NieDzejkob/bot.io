@@ -1,4 +1,3 @@
-use diesel::prelude::*;
 use serde::Deserialize;
 use serenity::framework::standard::{
     StandardFramework,
@@ -12,6 +11,7 @@ use std::path::Path;
 
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate extension_trait;
+#[macro_use] extern crate ifmt;
 #[macro_use] extern crate rental;
 #[macro_use] extern crate strum_macros;
 
@@ -24,6 +24,7 @@ pub mod schema;
 pub mod models;
 pub mod interactive;
 pub mod problem;
+pub mod reactions;
 
 /// Re-exports types commonly used in the codebase.
 ///
@@ -155,29 +156,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-#[command]
-fn problems(rctx: &mut Context, msg: &Message) -> CommandResult {
-    let ctx = rctx.clone();
-    let user = msg.author.clone();
-    InteractiveCommand {
-        generator: Gen::new_boxed(|co| async move {
-            use schema::problems::dsl::*;
-
-            let results = problems.load::<models::Problem>(&db::get_connection(&ctx)?)
-                .context("Fetch problems from database")?;
-            let msg = user.dm(&ctx, |m| m.content(
-                    format!("{} problems available", results.len())))?;
-            msg.react(&ctx, '\u{1f44d}')?;
-
-            loop {
-                dbg!(co.yield_(()).await);
-            }
-        }),
-        abort_message: None,
-    }.start(rctx, msg);
-    Ok(())
-}
-
 #[group]
 #[commands(problems)]
 struct IOGame;
+use problem::PROBLEMS_COMMAND;

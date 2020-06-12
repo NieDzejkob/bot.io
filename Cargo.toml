@@ -16,6 +16,7 @@ env_logger = "0.7"
 enum-map = "0.6.2"
 extension-trait = "0.2.1"
 genawaiter = "0.99"
+ifmt = "0.3.0"
 joinery = "2.0.0"
 log = "0.4"
 mathparser = { path = "mathparser" }
