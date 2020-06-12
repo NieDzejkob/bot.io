@@ -10,7 +10,7 @@
 use crate::prelude::*;
 use genawaiter::{
     GeneratorState::*,
-    sync::GenBoxed,
+    sync::{Co, GenBoxed},
 };
 use serenity::{
     cache::CacheRwLock,
@@ -19,8 +19,24 @@ use serenity::{
 use std::collections::HashMap;
 use std::sync::Arc;
 
+pub enum Event {
+    Start,
+    Message(MessageId, String),
+    Reaction(MessageId, ReactionType),
+}
+
+/// Wait until the user responds with a message and return its contents. Ignore any other events.
+pub async fn get_msg(co: &Co<(), Event>) -> String {
+    loop {
+        match co.yield_(()).await {
+            Event::Message(_, contents) => return contents,
+            _ => continue,
+        }
+    }
+}
+
 pub struct InteractiveCommand {
-    pub generator: GenBoxed<(), String>,
+    pub generator: GenBoxed<(), Event>,
     pub abort_message: String,
 }
 
@@ -49,7 +65,7 @@ pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
             match msg.content.to_lowercase().as_str() {
                 "y" | "yes" => {
                     state.command = next_command;
-                    state.command.generator.resume_with(String::new());
+                    state.command.generator.resume_with(Event::Start);
                 }
                 "n" | "no" => {}
                 _ => {
@@ -61,7 +77,7 @@ pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
                 }
             }
         } else {
-            if let Complete(()) = state.command.generator.resume_with(msg.content.clone()) {
+            if let Complete(()) = state.command.generator.resume_with(Event::Message(msg.id, msg.content.clone())) {
                 ctx.data.write()
                     .get_mut::<InteractionStates>().unwrap()
                     .remove(&msg.author.id);
@@ -98,7 +114,7 @@ impl InteractiveCommand {
                 e.insert(Arc::clone(&state));
                 let mut state = state.lock();
                 drop(lock);
-                state.command.generator.resume_with(String::new());
+                state.command.generator.resume_with(Event::Start);
             }
         }
     }

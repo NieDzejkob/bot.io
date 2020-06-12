@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use crate::models::NewProblem;
+use crate::interactive::get_msg;
 use diesel::prelude::*;
 use enum_map::{enum_map, EnumMap};
 use joinery::iter::JoinableIterator;
@@ -61,7 +62,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                         e.clone_from(&embed);
                         e.title("`<name?>`")
                     })).context("Send embed").log_error();
-                    co.yield_(()).await
+                    get_msg(&co).await
                 }
             };
 
@@ -71,14 +72,14 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 e.clone_from(&embed);
                 e.description("`<description?>`")
             })).context("Send embed").log_error();
-            let description = co.yield_(()).await;
+            let description = get_msg(&co).await;
             embed.description(&description);
 
             user.dm(&ctx, |m| m.embed(|e| {
                 e.clone_from(&embed);
                 e.field("Difficulty", "`<difficulty?>`", false)
             })).context("Send embed").log_error();
-            let difficulty = co.yield_(()).await;
+            let difficulty = get_msg(&co).await;
             embed.field("Difficulty", &difficulty, false);
 
             user.dm(&ctx, |m| m.embed(|e| {
@@ -86,7 +87,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 e.field("Formula", "`<formula?>`", true)
             })).context("Send embed").log_error();
             let formula = loop {
-                let formula = co.yield_(()).await;
+                let formula = get_msg(&co).await;
                 let function = parse_command(&formula)
                     .map_err(From::from)
                     .and_then(|cmd| cmd.try_into());
@@ -103,7 +104,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 e.field("Domain", "`<domain?>`", true);
                 e.footer(|foot| foot.text("TODO: The domain field doesn't actually do anything yet."))
             })).context("Send embed").log_error();
-            let domain = co.yield_(()).await;
+            let domain = get_msg(&co).await;
             embed.field("Domain", format!("`{}`", domain), true);
 
             use ScoringFactor::*;
@@ -135,7 +136,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 })).context("Send embed").log_error();
 
                 loop {
-                    let command = co.yield_(()).await;
+                    let command = get_msg(&co).await;
                     if command == "done" {
                         break 'scoring_loop;
                     }
