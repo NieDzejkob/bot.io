@@ -1,6 +1,7 @@
 use crate::{ast, eval::FuncDef, ParseError};
 use std::convert::TryFrom;
 
+#[derive(Clone, Debug)]
 pub struct MathError {
     pub span: Option<(usize, usize)>,
     pub message: String,

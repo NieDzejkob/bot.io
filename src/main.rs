@@ -12,6 +12,7 @@ use std::path::Path;
 
 #[macro_use] extern crate diesel;
 #[macro_use] extern crate extension_trait;
+#[macro_use] extern crate rental;
 #[macro_use] extern crate strum_macros;
 
 pub mod admin;
@@ -22,6 +23,7 @@ pub mod eval;
 pub mod schema;
 pub mod models;
 pub mod interactive;
+pub mod problem;
 
 /// Re-exports types commonly used in the codebase.
 ///

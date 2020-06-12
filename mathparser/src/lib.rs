@@ -14,6 +14,10 @@ pub fn parse_expr(input: &str) -> Result<Expr<'_>, ParseError<'_>> {
     grammar::ExprParser::new().parse(input)
 }
 
+pub fn parse_pred(input: &str) -> Result<Pred<'_>, ParseError<'_>> {
+    grammar::PredParser::new().parse(input)
+}
+
 pub fn parse_command(input: &str) -> Result<Command<'_>, ParseError<'_>> {
     grammar::CommandParser::new().parse(input)
 }

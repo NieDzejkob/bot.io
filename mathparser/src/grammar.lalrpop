@@ -23,7 +23,7 @@ pub Command: Command<'input> = {
     Pred => Command::Pred(<>),
 };
 
-Pred: Pred<'input> = {
+pub Pred: Pred<'input> = {
     Spanned<Expr> Spanned<Cmp> Spanned<Expr> => Pred::Cmp(<>)
 };
 

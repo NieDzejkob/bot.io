@@ -4,7 +4,7 @@ use crate::schema::problems;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, DieselNewType, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct ProblemId(i32);
+pub struct ProblemId(pub i32);
 
 #[derive(Queryable)]
 pub struct Problem {
