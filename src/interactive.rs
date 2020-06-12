@@ -32,6 +32,15 @@ pub async fn get_msg(co: &Co<(), Event>) -> String {
     }
 }
 
+pub async fn get_reaction_on_msg(co: &Co<(), Event>, msg: MessageId) -> Reaction {
+    loop {
+        match co.yield_(()).await {
+            Event::Reaction(reaction) if reaction.message_id == msg => return reaction,
+            _ => continue,
+        }
+    }
+}
+
 pub struct InteractiveCommand {
     pub generator: GenBoxed<(), Event, Result<()>>,
     pub abort_message: Option<String>,

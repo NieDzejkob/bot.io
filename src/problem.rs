@@ -2,6 +2,8 @@ use std::convert::{TryFrom, TryInto};
 use diesel::prelude::*;
 use crate::prelude::*;
 use crate::models::{Problem, ProblemId};
+use crate::reactions::digit_as_emoji;
+use crate::interactive::get_reaction_on_msg;
 use joinery::iter::JoinableIterator;
 use mathparser::{ast, parse_pred, errors::MathError};
 use rent_problem::ParsedFormula;
@@ -70,8 +72,7 @@ impl ParsedProblem {
     }
 
     pub fn show_in_embed(&self, n: u8) -> String {
-        let icon = crate::reactions::digit_as_emoji(n);
-        iformat!("{icon}  **{self.name} [{self.difficulty}]**\n\
+        iformat!("{digit_as_emoji(n)}  **{self.name} [{self.difficulty}]**\n\
                   {self.description}\n\n\
                   `{self.get_function_declaration()}` where `{self.domain}`")
     }
@@ -114,7 +115,7 @@ pub fn problems(rctx: &Context, msg: &Message) -> CommandResult {
             let mut page = 0;
             let page_count = (results.len() + PAGE_SIZE - 1) / PAGE_SIZE;
 
-            let embed_for_page = |e: &mut CreateEmbed| {
+            let embed_for_page = |e: &mut CreateEmbed, page| {
                 e.color(Color::BLURPLE)
                     .title(format!("{} problems available", results.len()))
                     .footer(|f| f.text(format!("Page {} of {}", page + 1, page_count)))
@@ -127,12 +128,59 @@ pub fn problems(rctx: &Context, msg: &Message) -> CommandResult {
                             .join_with("\n\n"));
             };
 
-            let msg = user.dm(&ctx, |m| m.embed(|e| { embed_for_page(e); e }))?;
+            let mut msg = user.dm(&ctx, |m| m.embed(|e| { embed_for_page(e, page); e }))?;
 
-            msg.react(&ctx, '\u{1f44d}')?;
+            if page_count > 1 {
+                msg.react(&ctx, ReactionType::try_from(crate::reactions::ARROW_LEFT).unwrap())?;
+                msg.react(&ctx, ReactionType::try_from(crate::reactions::ARROW_RIGHT).unwrap())?;
+            }
+
+            let mut choice_reacts = vec![];
+            let mut update_buttons = |ctx, msg: &Message, page| -> Result<()> {
+                let count = if page != page_count - 1 {
+                    PAGE_SIZE
+                } else {
+                    results.len() % PAGE_SIZE
+                };
+
+                while choice_reacts.len() < count {
+                    let num = digit_as_emoji(choice_reacts.len() as u8 + 1);
+                    choice_reacts.push(msg.react(ctx, ReactionType::try_from(num).unwrap())?);
+                }
+
+                while choice_reacts.len() > count {
+                    choice_reacts.pop().unwrap().delete(&ctx)?;
+                }
+
+                Ok(())
+            };
+
+            update_buttons(&ctx, &msg, page)?;
+
+            let mut update_page = |ctx, msg: &mut Message, page| -> Result<()> {
+                msg.edit(ctx, |m| m.embed(|e| { embed_for_page(e, page); e }))?;
+                update_buttons(ctx, msg, page)
+            };
 
             loop {
-                dbg!(co.yield_(()).await);
+                match get_reaction_on_msg(&co, msg.id).await.emoji {
+                    ReactionType::Unicode(x) if x == crate::reactions::ARROW_LEFT => {
+                        if page == 0 {
+                            page = page_count - 1;
+                        } else {
+                            page -= 1;
+                        }
+                        update_page(&ctx, &mut msg, page)?;
+                    }
+                    ReactionType::Unicode(x) if x == crate::reactions::ARROW_RIGHT => {
+                        page += 1;
+                        if page == page_count {
+                            page = 0;
+                        }
+                        update_page(&ctx, &mut msg, page)?;
+                    }
+                    _ => continue,
+                }
             }
         }),
         abort_message: None,

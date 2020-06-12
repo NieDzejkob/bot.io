@@ -171,8 +171,7 @@ fn new_problem(rctx: &Context, msg: &Message, args: Args) -> CommandResult {
             diesel::insert_into(problems::table)
                 .values(&problem)
                 .execute(&conn)
-                .context("Insert problem into database")
-                ?;
+                .context("Insert problem into database")?;
 
             user.dm(&ctx, |m| m.embed(|e| {
                 *e = embed;
