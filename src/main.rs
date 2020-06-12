@@ -78,7 +78,15 @@ impl TypeMapKey for Config {
 
 struct Handler;
 
-impl EventHandler for Handler {}
+impl EventHandler for Handler {
+    fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        interactive::handle_reaction(&ctx, reaction);
+    }
+
+    fn reaction_remove(&self, ctx: Context, reaction: Reaction) {
+        interactive::handle_reaction(&ctx, reaction);
+    }
+}
 
 fn main() -> Result<()> {
     dotenv::dotenv().ok();
@@ -155,8 +163,13 @@ fn problems(rctx: &mut Context, msg: &Message) -> CommandResult {
 
             let results = problems.load::<models::Problem>(&db::get_connection(&ctx)?)
                 .context("Fetch problems from database")?;
-            user.dm(ctx, |m| m.content(format!("{} problems available", results.len())))?;
-            Ok(())
+            let msg = user.dm(&ctx, |m| m.content(
+                    format!("{} problems available", results.len())))?;
+            msg.react(&ctx, '\u{1f44d}')?;
+
+            loop {
+                dbg!(co.yield_(()).await);
+            }
         }),
         abort_message: None,
     }.start(rctx, msg);

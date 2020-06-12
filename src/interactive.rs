@@ -15,10 +15,11 @@ use genawaiter::{
 use std::collections::HashMap;
 use std::sync::Arc;
 
+#[derive(Clone, Debug)]
 pub enum Event {
     Start,
     Message(MessageId, String),
-    Reaction(MessageId, ReactionType),
+    Reaction(Reaction),
 }
 
 /// Wait until the user responds with a message and return its contents. Ignore any other events.
@@ -48,14 +49,15 @@ impl TypeMapKey for InteractionStates {
     type Value = HashMap<UserId, Arc<Mutex<InteractionState>>>;
 }
 
-pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
-    let state =
-        ctx.data.read()
-            .get::<InteractionStates>().unwrap()
-            .get(&msg.author.id)
-            .map(Arc::clone);
+fn get_state(ctx: &Context, user: UserId) -> Option<Arc<Mutex<InteractionState>>> {
+    ctx.data.read()
+        .get::<InteractionStates>().unwrap()
+        .get(&user)
+        .map(Arc::clone)
+}
 
-    if let Some(state) = state {
+pub fn handle_message(ctx: &Context, msg: &Message) -> CommandResult {
+    if let Some(state) = get_state(ctx, msg.author.id) {
         let mut state = state.lock();
 
         if let Some(next_command) = state.pending_abort.take() {
@@ -67,7 +69,7 @@ pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
                 "n" | "no" => {}
                 _ => {
                     state.pending_abort = Some(next_command);
-                    msg.author.dm(&ctx, |m| m.content(format!(
+                    msg.author.dm(ctx, |m| m.content(format!(
                         "Please answer with `yes` or `no`. {}",
                         state.command.abort_message.as_ref().unwrap()
                     ))).context("Send abort message").log_error();
@@ -85,6 +87,19 @@ pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
         Ok(())
     } else {
         crate::eval::handle_message(ctx, msg)
+    }
+}
+
+pub fn handle_reaction(ctx: &Context, reaction: Reaction) {
+    if reaction.guild_id.is_some() {
+        return;
+    }
+
+    if let Some(state) = get_state(ctx, reaction.user_id) {
+        let mut state = state.lock();
+        if state.pending_abort.is_none() {
+            state.command.generator.resume_with(Event::Reaction(reaction));
+        }
     }
 }
 

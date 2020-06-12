@@ -4,7 +4,7 @@ use crate::prelude::*;
 use crate::Config;
 use mathparser::errors::MathError;
 
-pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
+pub fn handle_message(ctx: &Context, msg: &Message) -> CommandResult {
     let command = mathparser::parse_command(&msg.content);
     use mathparser::Command;
     match command {
