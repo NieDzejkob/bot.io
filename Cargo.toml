@@ -23,10 +23,13 @@ mathparser = { path = "mathparser" }
 r2d2 = "0.8"
 rental = "0.5.4"
 serde = "1"
-serenity = "0.8"
 strum = "0.18.0"
 strum_macros = "0.18.0"
 toml = "0.5"
+
+[dependencies.serenity]
+git = "https://github.com/NieDzejkob/serenity"
+branch = "return-reaction"
 
 [workspace]
 members = [

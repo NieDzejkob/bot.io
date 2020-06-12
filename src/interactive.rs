@@ -95,7 +95,7 @@ pub fn handle_reaction(ctx: &Context, reaction: Reaction) {
         return;
     }
 
-    if let Some(state) = get_state(ctx, reaction.user_id) {
+    if let Some(state) = get_state(ctx, reaction.user_id.unwrap()) {
         let mut state = state.lock();
         if state.pending_abort.is_none() {
             state.command.generator.resume_with(Event::Reaction(reaction));
@@ -104,7 +104,7 @@ pub fn handle_reaction(ctx: &Context, reaction: Reaction) {
 }
 
 impl InteractiveCommand {
-    pub fn start(self, ctx: &mut Context, msg: &Message) {
+    pub fn start(self, ctx: &Context, msg: &Message) {
         let mut lock = ctx.data.write();
         let entry = lock.get_mut::<InteractionStates>().unwrap()
             .entry(msg.author.id);

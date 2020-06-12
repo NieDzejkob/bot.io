@@ -106,10 +106,12 @@ fn main() -> Result<()> {
         StandardFramework::new()
         .configure(|c| c
             .prefix(&config.prefix))
-        .after(|ctx, msg, _, result| {
-            let result = result.and_then(|()| if !msg.is_private() {
-                msg.react(&ctx, '👌').context("add an OK reaction").map_err(From::from)
-            } else { Ok(()) });
+        .after(|ctx, msg, _, mut result| {
+            if result.is_ok() && !msg.is_private() {
+                result = msg.react(&ctx, '👌').context("add an OK reaction")
+                    .map(drop)
+                    .map_err(From::from);
+            }
 
             if let Err(why) = result {
                 log::error!("Message {:?} triggered an error: {:?}", msg.content, why);

@@ -9,7 +9,7 @@ use new_problem::*;
 
 #[check]
 #[name = "Admin"]
-fn admin_check(ctx: &mut Context, msg: &Message, _: &mut Args, _: &CommandOptions) -> CheckResult {
+fn admin_check(ctx: &Context, msg: &Message, _: &mut Args, _: &CommandOptions) -> CheckResult {
     if ctx.data.read().get::<crate::Config>().unwrap().admin_users.contains(&msg.author.id) {
         true.into()
     } else {

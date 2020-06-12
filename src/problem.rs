@@ -97,7 +97,7 @@ fn function_declaration() {
 }
 
 #[command]
-pub fn problems(rctx: &mut Context, msg: &Message) -> CommandResult {
+pub fn problems(rctx: &Context, msg: &Message) -> CommandResult {
     let ctx = rctx.clone();
     let user = msg.author.clone();
     InteractiveCommand {

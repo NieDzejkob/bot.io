@@ -47,7 +47,7 @@ fn update_scoring(scoring: &mut EnumMap<ScoringFactor, i32>, command: &str)
 
 #[command("newproblem")]
 #[aliases("addproblem")]
-fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
+fn new_problem(rctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let ctx = rctx.clone();
     let user = msg.author.clone();
     let maybe_name = args.remains().map(|s| s.to_owned());
