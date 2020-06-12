@@ -36,10 +36,11 @@ pub async fn get_msg(co: &Co<(), Event>) -> String {
 }
 
 pub struct InteractiveCommand {
-    pub generator: GenBoxed<(), Event>,
-    pub abort_message: String,
+    pub generator: GenBoxed<(), Event, Result<()>>,
+    pub abort_message: Option<String>,
 }
 
+// Invariant: if command.abort_message is None, then pending_abort is also None.
 pub struct InteractionState {
     command: InteractiveCommand,
     pending_abort: Option<InteractiveCommand>,
@@ -72,12 +73,13 @@ pub fn handle_message(ctx: &mut Context, msg: &Message) -> CommandResult {
                     state.pending_abort = Some(next_command);
                     msg.author.dm(&ctx, |m| m.content(format!(
                         "Please answer with `yes` or `no`. {}",
-                        state.command.abort_message
+                        state.command.abort_message.as_ref().unwrap()
                     ))).context("Send abort message").log_error();
                 }
             }
         } else {
-            if let Complete(()) = state.command.generator.resume_with(Event::Message(msg.id, msg.content.clone())) {
+            if let Complete(status) = state.command.generator.resume_with(Event::Message(msg.id, msg.content.clone())) {
+                status.log_error();
                 ctx.data.write()
                     .get_mut::<InteractionStates>().unwrap()
                     .remove(&msg.author.id);
@@ -101,10 +103,16 @@ impl InteractiveCommand {
             Occupied(e) => {
                 let state = Arc::clone(e.get());
                 let mut state = state.lock();
+                let state = &mut *state; // allow partial borrows
                 drop(lock);
-                state.pending_abort = Some(self);
-                msg.author.dm(&ctx, |m| m.content(&state.command.abort_message))
-                    .context("Send abort message").log_error();
+                if let Some(ref abort_msg) = state.command.abort_message {
+                    state.pending_abort = Some(self);
+                    msg.author.dm(&ctx, |m| m.content(&abort_msg))
+                        .context("Send abort message").log_error();
+                } else {
+                    state.command = self;
+                    state.command.generator.resume_with(Event::Start);
+                }
             }
             Vacant(e) => {
                 let state = Arc::new(Mutex::new(InteractionState {

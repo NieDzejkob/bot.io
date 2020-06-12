@@ -61,7 +61,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                     user.dm(&ctx, |m| m.embed(|e| {
                         e.clone_from(&embed);
                         e.title("`<name?>`")
-                    })).context("Send embed").log_error();
+                    })).context("Send embed")?;
                     get_msg(&co).await
                 }
             };
@@ -71,21 +71,21 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
             user.dm(&ctx, |m| m.embed(|e| {
                 e.clone_from(&embed);
                 e.description("`<description?>`")
-            })).context("Send embed").log_error();
+            })).context("Send embed")?;
             let description = get_msg(&co).await;
             embed.description(&description);
 
             user.dm(&ctx, |m| m.embed(|e| {
                 e.clone_from(&embed);
                 e.field("Difficulty", "`<difficulty?>`", false)
-            })).context("Send embed").log_error();
+            })).context("Send embed")?;
             let difficulty = get_msg(&co).await;
             embed.field("Difficulty", &difficulty, false);
 
             user.dm(&ctx, |m| m.embed(|e| {
                 e.clone_from(&embed);
                 e.field("Formula", "`<formula?>`", true)
-            })).context("Send embed").log_error();
+            })).context("Send embed")?;
             let formula = loop {
                 let formula = get_msg(&co).await;
                 let function = parse_command(&formula)
@@ -103,7 +103,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 e.clone_from(&embed);
                 e.field("Domain", "`<domain?>`", true);
                 e.footer(|foot| foot.text("TODO: The domain field doesn't actually do anything yet."))
-            })).context("Send embed").log_error();
+            })).context("Send embed")?;
             let domain = get_msg(&co).await;
             embed.field("Domain", format!("`{}`", domain), true);
 
@@ -133,7 +133,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 user.dm(&ctx, |m| m.embed(|e| {
                     e.clone_from(&embed);
                     e.field("Scoring", scoring_string, false)
-                })).context("Send embed").log_error();
+                })).context("Send embed")?;
 
                 loop {
                     let command = get_msg(&co).await;
@@ -143,7 +143,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
 
                     if let Err(msg) = update_scoring(&mut scoring, &command) {
                         user.dm(&ctx, |m| m.content(msg))
-                            .context("Send scoring command error message").log_error();
+                            .context("Send scoring command error message")?;
                     } else {
                         break;
                     }
@@ -164,7 +164,7 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 score_submit_incorrect: scoring[SubmitIncorrect],
             };
 
-            let conn = crate::db::get_connection(&ctx).unwrap();
+            let conn = crate::db::get_connection(&ctx)?;
 
             use crate::schema::problems;
 
@@ -172,15 +172,17 @@ fn new_problem(rctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
                 .values(&problem)
                 .execute(&conn)
                 .context("Insert problem into database")
-                .log_error();
+                ?;
 
             user.dm(&ctx, |m| m.embed(|e| {
                 *e = embed;
                 e.footer(|foot| foot.text("Your problem has been created!"));
                 e.color(Color::DARK_GREEN)
-            })).context("Send embed").log_error();
+            })).context("Send embed")?;
+
+            Ok(())
         }),
-        abort_message: "Do you want to abort creating this problem?".to_owned(),
+        abort_message: Some("Do you want to abort creating this problem?".to_owned()),
     }.start(rctx, msg);
     Ok(())
 }

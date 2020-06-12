@@ -23,6 +23,9 @@ pub mod schema;
 pub mod models;
 pub mod interactive;
 
+/// Re-exports types commonly used in the codebase.
+///
+/// Feel free to wildcard-import it with `use crate::prelude::*;`.
 pub mod prelude {
     pub use anyhow::{Context as _, Result};
     pub use genawaiter::sync::Gen;
@@ -143,13 +146,20 @@ fn main() -> Result<()> {
 }
 
 #[command]
-fn problems(ctx: &mut Context, msg: &Message) -> CommandResult {
-    use schema::problems::dsl::*;
+fn problems(rctx: &mut Context, msg: &Message) -> CommandResult {
+    let ctx = rctx.clone();
+    let user = msg.author.clone();
+    InteractiveCommand {
+        generator: Gen::new_boxed(|co| async move {
+            use schema::problems::dsl::*;
 
-    let results = problems.load::<models::Problem>(&db::get_connection(ctx)?)
-        .context("Fetch problems from database")?;
-    msg.author.dm(ctx, |m| m.content(format!("{} problems available", results.len())))?;
-
+            let results = problems.load::<models::Problem>(&db::get_connection(&ctx)?)
+                .context("Fetch problems from database")?;
+            user.dm(ctx, |m| m.content(format!("{} problems available", results.len())))?;
+            Ok(())
+        }),
+        abort_message: None,
+    }.start(rctx, msg);
     Ok(())
 }
 
