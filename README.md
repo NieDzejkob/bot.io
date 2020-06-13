@@ -17,6 +17,12 @@ should convey how to connect to it, in the format
 DATABASE_URL=postgres://username:password@host/dbname
 ```
 
+You will probably need to create a user and database for that
+```
+$ sudo -u postgres createuser -P iobot # will prompt for password
+$ sudo -u postgres createdb iobot
+```
+
 To initialize the database, run
 ```
 cargo install diesel_cli
