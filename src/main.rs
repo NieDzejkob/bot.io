@@ -1,3 +1,4 @@
+use num_traits::identities::One;
 use serde::Deserialize;
 use serenity::framework::standard::{
     StandardFramework,
@@ -6,6 +7,7 @@ use serenity::framework::standard::{
 };
 use std::collections::{HashMap, HashSet};
 use std::fs;
+use std::fmt::Display;
 use std::sync::Arc;
 use std::path::Path;
 
@@ -43,6 +45,7 @@ pub mod prelude {
     pub use crate::interactive::InteractiveCommand;
     pub use crate::ErrorExt;
     pub use crate::errors::MathErrorExt;
+    pub use crate::plural;
 }
 
 use prelude::*;
@@ -53,6 +56,14 @@ impl<T> ErrorExt for Result<T> {
         if let Err(why) = self {
             log::error!("An error occured: {}", why);
         }
+    }
+}
+
+pub fn plural(n: impl One + Display + PartialEq, thing: &str) -> String {
+    if n.is_one() {
+        iformat!(n " " thing)
+    } else {
+        iformat!(n " " thing "s")
     }
 }
 
