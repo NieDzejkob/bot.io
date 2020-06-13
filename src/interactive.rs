@@ -65,6 +65,17 @@ fn get_state(ctx: &Context, user: UserId) -> Option<Arc<Mutex<InteractionState>>
         .map(Arc::clone)
 }
 
+impl InteractiveCommand {
+    fn handle_event(&mut self, ctx: &Context, user: UserId, event: Event) {
+        if let Complete(status) = self.generator.resume_with(event) {
+            status.log_error();
+            ctx.data.write()
+                .get_mut::<InteractionStates>().unwrap()
+                .remove(&user);
+        }
+    }
+}
+
 pub fn handle_message(ctx: &Context, msg: &Message) -> CommandResult {
     if let Some(state) = get_state(ctx, msg.author.id) {
         let mut state = state.lock();
@@ -73,7 +84,7 @@ pub fn handle_message(ctx: &Context, msg: &Message) -> CommandResult {
             match msg.content.to_lowercase().as_str() {
                 "y" | "yes" => {
                     state.command = next_command;
-                    state.command.generator.resume_with(Event::Start);
+                    state.command.handle_event(ctx, msg.author.id, Event::Start);
                 }
                 "n" | "no" => {}
                 _ => {
@@ -85,12 +96,8 @@ pub fn handle_message(ctx: &Context, msg: &Message) -> CommandResult {
                 }
             }
         } else {
-            if let Complete(status) = state.command.generator.resume_with(Event::Message(msg.id, msg.content.clone())) {
-                status.log_error();
-                ctx.data.write()
-                    .get_mut::<InteractionStates>().unwrap()
-                    .remove(&msg.author.id);
-            }
+            state.command.handle_event(ctx, msg.author.id,
+                Event::Message(msg.id, msg.content.clone()));
         }
 
         Ok(())
@@ -104,10 +111,11 @@ pub fn handle_reaction(ctx: &Context, reaction: Reaction) {
         return;
     }
 
-    if let Some(state) = get_state(ctx, reaction.user_id.unwrap()) {
+    let user = reaction.user_id.unwrap();
+    if let Some(state) = get_state(ctx, user) {
         let mut state = state.lock();
         if state.pending_abort.is_none() {
-            state.command.generator.resume_with(Event::Reaction(reaction));
+            state.command.handle_event(ctx, user, Event::Reaction(reaction));
         }
     }
 }
@@ -131,7 +139,7 @@ impl InteractiveCommand {
                         .context("Send abort message").log_error();
                 } else {
                     state.command = self;
-                    state.command.generator.resume_with(Event::Start);
+                    state.command.handle_event(ctx, msg.author.id, Event::Start);
                 }
             }
             Vacant(e) => {
