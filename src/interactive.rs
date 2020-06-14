@@ -154,7 +154,7 @@ impl InteractiveCommand {
                 e.insert(Arc::clone(&state));
                 let mut state = state.lock();
                 drop(lock);
-                state.command.generator.resume_with(Event::Start);
+                state.command.handle_event(ctx, msg.author.id, Event::Start);
             }
         }
     }
