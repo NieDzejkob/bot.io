@@ -1,4 +1,4 @@
-prefix = "$"
+prefix = "io-"
 
 [admin_users]
 NieDzejkob = 238313704578482176
