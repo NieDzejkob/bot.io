@@ -1,6 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 use diesel::prelude::*;
 use crate::prelude::*;
+use crate::Config;
 use crate::models::{Problem, ProblemId};
 use crate::reactions::{self, digit_as_emoji, emoji_as_digit};
 use crate::interactive::get_reaction_on_msg;
@@ -114,6 +115,13 @@ pub fn problems(rctx: &Context, msg: &Message) -> CommandResult {
             let results = results.into_iter().map(ParsedProblem::try_from)
                 .collect::<Result<Vec<_>, _>>()
                 .context("Parse problems in the database")?;
+
+            if results.is_empty() {
+                user.dm(&ctx, |m| m.content(format!("No problems are available. \
+                    Tell someone with administrator privileges to use `{}newproblem`.",
+                    ctx.data.read().get::<Config>().unwrap().prefix)))?;
+                return Ok(());
+            }
 
             const PAGE_SIZE: usize = 3;
             let mut page = 0;
