@@ -42,6 +42,26 @@ impl From<ParseError<'_>> for MathError {
     }
 }
 
+impl ast::Expr<'_> {
+    fn describe(&self) -> &str {
+        use crate::ast::Expr::*;
+        match self {
+            Func(_, _) => "a function application",
+            Ident(_) => "a variable name",
+            If(_, _, _) => "a conditional expression",
+            BinOp(_, op, _) => match op.0 {
+                ast::BinOp::Add => "a sum",
+                ast::BinOp::Sub => "a subtraction",
+                ast::BinOp::Mul => "a product",
+                ast::BinOp::Div => "a quotient",
+                ast::BinOp::Mod => "a remainder",
+            },
+            Neg(_) => "a negation",
+            Num(_) => "a number",
+        }
+    }
+}
+
 impl<'a> TryFrom<ast::Command<'a>> for FuncDef<'a> {
     type Error = MathError;
 
@@ -86,26 +106,6 @@ impl<'a> TryFrom<ast::Command<'a>> for FuncDef<'a> {
             ast::Command::Expr(e) => {
                 format_error(e.describe(), None)
             }
-        }
-    }
-}
-
-impl ast::Expr<'_> {
-    fn describe(&self) -> &str {
-        use crate::ast::Expr::*;
-        match self {
-            Func(_, _) => "a function application",
-            Ident(_) => "a variable name",
-            If(_, _, _) => "a conditional expression",
-            BinOp(_, op, _) => match op.0 {
-                ast::BinOp::Add => "a sum",
-                ast::BinOp::Sub => "a subtraction",
-                ast::BinOp::Mul => "a product",
-                ast::BinOp::Div => "a quotient",
-                ast::BinOp::Mod => "a remainder",
-            },
-            Neg(_) => "a negation",
-            Num(_) => "a number",
         }
     }
 }
