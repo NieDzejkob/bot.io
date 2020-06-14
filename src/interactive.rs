@@ -77,6 +77,8 @@ impl InteractiveCommand {
 }
 
 pub fn handle_message(ctx: &Context, msg: &Message) -> CommandResult {
+    log::info!("Handling message: {:?}", msg.content);
+
     if let Some(state) = get_state(ctx, msg.author.id) {
         let mut state = state.lock();
 
@@ -113,6 +115,8 @@ pub fn handle_reaction(ctx: &Context, reaction: Reaction) {
 
     let user = reaction.user_id.unwrap();
     if let Some(state) = get_state(ctx, user) {
+        log::info!("Handling reaction: {:?}", reaction.emoji);
+
         let mut state = state.lock();
         if state.pending_abort.is_none() {
             state.command.handle_event(ctx, user, Event::Reaction(reaction));

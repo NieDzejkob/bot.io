@@ -117,6 +117,10 @@ fn main() -> Result<()> {
         StandardFramework::new()
         .configure(|c| c
             .prefix(&config.prefix))
+        .before(|ctx, msg, _| {
+            log::info!("Running command: {:?}", msg.content);
+            true
+        })
         .after(|ctx, msg, _, mut result| {
             if result.is_ok() && !msg.is_private() {
                 result = msg.react(&ctx, '👌').context("add an OK reaction")
