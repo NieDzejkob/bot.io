@@ -3,6 +3,7 @@ use num_traits::identities::Zero;
 use std::collections::HashMap;
 use crate::ast::*;
 
+#[derive(Clone, Debug)]
 pub struct FuncDef<'a> {
     pub name: &'a str,
     pub argument_names: Vec<&'a str>,

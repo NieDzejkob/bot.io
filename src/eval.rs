@@ -3,13 +3,34 @@
 use crate::prelude::*;
 use crate::Config;
 use mathparser::errors::MathError;
+use mathparser::eval::{ConcreteContext, SymbolValue};
 
 pub fn handle_message(ctx: &Context, msg: &Message) -> CommandResult {
     let command = mathparser::parse_command(&msg.content);
     use mathparser::Command;
     match command {
-        Ok(Command::Expr(e)) => {
-            dbg!(e);
+        Ok(Command::Expr(expr)) => {
+            let mut eval_ctx = ConcreteContext::new();
+            let problem = crate::problem::get_chosen_problem(ctx, msg.author.id)?;
+            if let Some(problem) = &problem {
+                let func = problem.func_def();
+                eval_ctx.0.insert(func.name.to_owned(), SymbolValue::Func(func.clone()));
+            }
+
+            match expr.evaluate(&eval_ctx, &mut |_, _| ()) {
+                Ok(v) => {
+                    msg.author.dm(ctx, |m| m.embed(|e| {
+                        e.title(MessageBuilder::new()
+                                .push_safe(&msg.content)
+                                .build())
+                            .description(format!(" = {}", v))
+                    }))?;
+                }
+                Err(why) => {
+                    dbg!(why);
+                    //let error: MathError = why.into();
+                }
+            }
         }
         Err(why) => {
             let error: MathError = why.into();

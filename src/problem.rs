@@ -10,6 +10,7 @@ use mathparser::{ast, parse_pred, errors::MathError, eval::FuncDef};
 use rent_problem::ParsedFormula;
 use serenity::builder::CreateEmbed;
 
+#[derive(Debug)]
 pub struct ParsedProblem {
     pub id: ProblemId,
     pub name: String,
@@ -27,7 +28,7 @@ rental! {
     pub mod rent_problem {
         use mathparser::eval::FuncDef;
 
-        #[rental(covariant)]
+        #[rental(covariant, debug)]
         pub struct ParsedFormula {
             formula: String,
             func_def: (&'formula str, FuncDef<'formula>),
@@ -68,15 +69,15 @@ impl TryFrom<Problem> for ParsedProblem {
 
 impl ParsedProblem {
     /// Returns a string like `f(x, y)`, sliced out of the formula that defines the function.
-    fn func_decl(&self) -> &str {
+    pub fn func_decl(&self) -> &str {
         self.formula.suffix().0
     }
 
-    fn func_def<'a>(&'a self) -> &FuncDef<'_> {
+    pub fn func_def<'a>(&'a self) -> &FuncDef<'_> {
         &self.formula.suffix().1
     }
 
-    pub fn show_in_problem_list(&self, n: u8) -> String {
+    fn show_in_problem_list(&self, n: u8) -> String {
         iformat!(digit_as_emoji(n) "  **" self.name " [" self.difficulty "]**\n\
                   " self.description "\n\n\
                   `" self.func_decl() "` where `" self.domain "`")
@@ -258,13 +259,15 @@ pub fn set_chosen_problem(ctx: &Context, user: UserId, problem: ProblemId) -> Re
     Ok(())
 }
 
-pub fn get_chosen_problem(ctx: &Context, user: UserId) -> Result<ParsedProblem> {
+pub fn get_chosen_problem(ctx: &Context, user: UserId) -> Result<Option<ParsedProblem>> {
     use crate::schema::*;
 
-    let problem: Problem = problems::table
+    problems::table
         .inner_join(chosen_problems::table)
         .filter(chosen_problems::user_id.eq(user.0 as i64))
         .select(problems::all_columns)
-        .get_result(&crate::db::get_connection(ctx)?)?;
-    Ok(problem.try_into()?)
+        .get_result(&crate::db::get_connection(ctx)?)
+        .optional()?
+        .map(Problem::try_into).transpose()
+        .map_err(From::from)
 }
