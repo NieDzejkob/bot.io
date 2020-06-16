@@ -19,27 +19,27 @@ pub struct Context<'a, T>(pub HashMap<String, SymbolValue<'a, T>>);
 pub type ConcreteContext<'a> = Context<'a, BigRational>;
 
 impl<T> Context<'_, T> {
-    pub fn get_variable(&self, name: Span<&str>) -> Result<&T, EvalError> {
+    pub fn get_variable<'input>(&self, name: Span<&'input str>) -> Result<&T, EvalError<'input>> {
         if let Some(value) = self.0.get(name.0) {
             if let SymbolValue::Num(n) = value {
                 Ok(n)
             } else {
-                Err(EvalError::NotAVariable(name.map(ToOwned::to_owned)))
+                Err(EvalError::NotAVariable(name))
             }
         } else {
-            Err(EvalError::UnknownVariable(name.map(ToOwned::to_owned)))
+            Err(EvalError::UnknownVariable(name))
         }
     }
 
-    pub fn get_function(&self, name: Span<&str>) -> Result<&FuncDef<'_>, EvalError> {
+    pub fn get_function<'input>(&self, name: Span<&'input str>) -> Result<&FuncDef<'_>, EvalError<'input>> {
         if let Some(value) = self.0.get(name.0) {
             if let SymbolValue::Func(f) = value {
                 Ok(f)
             } else {
-                Err(EvalError::NotAFunction(name.map(ToOwned::to_owned)))
+                Err(EvalError::NotAFunction(name))
             }
         } else {
-            Err(EvalError::UnknownFunction(name.map(ToOwned::to_owned)))
+            Err(EvalError::UnknownFunction(name))
         }
     }
 
@@ -49,30 +49,31 @@ impl<T> Context<'_, T> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum EvalError {
-    UnknownVariable(Span<String>),
-    UnknownFunction(Span<String>),
-    NotAVariable(Span<String>),
-    NotAFunction(Span<String>),
+pub enum EvalError<'a> {
+    UnknownVariable(Span<&'a str>),
+    UnknownFunction(Span<&'a str>),
+    NotAVariable(Span<&'a str>),
+    NotAFunction(Span<&'a str>),
     Arity {
-        function: Span<String>,
+        function: Span<&'a str>,
         expected: usize,
         actual: usize,
     },
     DivisionByZero,
+    EvaluatingFunction(Span<&'a str>),
 }
 
-impl<'a> Expr<'a> {
-    pub fn evaluate<'ctx>(&self,
-        ctx: &'ctx ConcreteContext<'a>,
+impl<'input> Expr<'input> {
+    pub fn evaluate(&self,
+        ctx: &ConcreteContext<'_>,
         scoring_callback: &mut impl FnMut(&str, &[BigRational]),
-    ) -> Result<BigRational, EvalError> {
+    ) -> Result<BigRational, EvalError<'input>> {
         Ok(match self {
             &Expr::Func(id, ref args) => {
                 let func = ctx.get_function(id)?;
                 if func.argument_names.len() != args.len() {
                     return Err(EvalError::Arity {
-                        function: id.map(ToOwned::to_owned),
+                        function: id,
                         expected: func.argument_names.len(),
                         actual: args.len(),
                     });
@@ -85,7 +86,8 @@ impl<'a> Expr<'a> {
                 let fn_ctx = Context(func.argument_names.iter().map(|&name| name.to_owned())
                                        .zip(values.into_iter().map(SymbolValue::Num))
                                        .collect());
-                func.value_expr.evaluate(&fn_ctx, scoring_callback)?
+                func.value_expr.evaluate(&fn_ctx, scoring_callback)
+                    .map_err(|_| EvalError::EvaluatingFunction(id))?
             }
             &Expr::Ident(id) => ctx.get_variable(id)?.clone(),
             Expr::If(cond, then, otherwise) => {
@@ -116,11 +118,11 @@ impl<'a> Expr<'a> {
     }
 }
 
-impl<'a> Pred<'a> {
-    pub fn evaluate<'ctx>(&self,
-        ctx: &'ctx ConcreteContext<'a>,
+impl<'input> Pred<'input> {
+    pub fn evaluate(&self,
+        ctx: &ConcreteContext<'_>,
         scoring_callback: &mut impl FnMut(&str, &[BigRational]),
-    ) -> Result<bool, EvalError> {
+    ) -> Result<bool, EvalError<'input>> {
         Ok(match self {
             Pred::Cmp(lhs, op, rhs) => {
                 let lhs = lhs.evaluate(ctx, scoring_callback)?;
@@ -151,7 +153,7 @@ mod tests {
         with_ctx(&ctx, expr)
     }
 
-    fn with_ctx<'a>(ctx: &ConcreteContext<'_>, expr: &'a str) -> Result<BigRational, EvalError> {
+    fn with_ctx<'a>(ctx: &ConcreteContext<'_>, expr: &'a str) -> Result<BigRational, EvalError<'a>> {
         parse_expr(expr).unwrap().evaluate(ctx, &mut |_, _| ())
     }
 
@@ -203,7 +205,7 @@ mod tests {
     #[test]
     fn unknown_variable() {
         assert_eq!(empty_ctx("3 * x"),
-            Err(EvalError::UnknownVariable(Span("x".to_owned(), (4, 5)))));
+            Err(EvalError::UnknownVariable(Span("x", (4, 5)))));
     }
 
     #[test]
@@ -245,7 +247,7 @@ mod tests {
         let mut scoring_calls = vec![];
         let value = expr.evaluate(&ctx, &mut test_scoring(&mut scoring_calls));
         assert_eq!(value, Err(EvalError::Arity {
-            function: Span("f".to_owned(), (0, 1)),
+            function: Span("f", (0, 1)),
             expected: 1,
             actual: 2,
         }));
@@ -254,7 +256,7 @@ mod tests {
     #[test]
     fn tracks_location_of_function_calls() {
         assert_eq!(empty_ctx("1 + foo(2)"),
-            Err(EvalError::UnknownFunction(Span("foo".to_owned(), (4, 7)))));
+            Err(EvalError::UnknownFunction(Span("foo", (4, 7)))));
     }
 
     #[test]
@@ -272,6 +274,23 @@ mod tests {
         ];
         let value = expr.evaluate(&ctx, &mut test_scoring(&mut scoring_calls));
         assert_eq!(value, Ok(ratio(16, 1)));
+        assert!(scoring_calls.is_empty());
+    }
+
+    #[test]
+    fn doesnt_leak_problem_details_on_error() {
+        let mut ctx = ConcreteContext::new();
+        ctx.0.insert("f".to_owned(), SymbolValue::Func(FuncDef {
+            name: "f",
+            argument_names: vec!["x"],
+            value_expr: parse_expr("y + 3").unwrap(),
+        }));
+        let expr = parse_expr("f(7)").unwrap();
+        let mut scoring_calls = vec![
+            ("f", vec![ratio(7, 1)]),
+        ];
+        let value = expr.evaluate(&ctx, &mut test_scoring(&mut scoring_calls));
+        assert_eq!(value, Err(EvalError::EvaluatingFunction(Span("f", (0, 1)))));
         assert!(scoring_calls.is_empty());
     }
 }
