@@ -31,7 +31,7 @@ pub enum Cmp {
 
 #[derive(Clone, Debug)]
 pub enum Expr<'a> {
-    Func(Span<&'a str>, Vec<Span<Expr<'a>>>),
+    Func(Span<&'a str>, Span<Vec<Span<Expr<'a>>>>),
     Ident(Span<&'a str>),
     If(BSpan<Pred<'a>>, BSpan<Expr<'a>>, BSpan<Expr<'a>>),
     BinOp(BSpan<Expr<'a>>, Span<BinOp>, BSpan<Expr<'a>>),
