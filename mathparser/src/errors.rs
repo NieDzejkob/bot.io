@@ -10,28 +10,29 @@ pub struct MathError {
 
 impl From<ParseError<'_>> for MathError {
     fn from(error: ParseError) -> Self {
+        use lalrpop_util::ParseError::*;
         match error {
-            ParseError::InvalidToken { location } => {
+            InvalidToken { location } => {
                 MathError {
                     span: Some((location, location + 1)),
                     message: "You lost me here...".into(),
                 }
             }
-            ParseError::UnrecognizedToken { token, .. } |
-            ParseError::ExtraToken { token } => {
+            UnrecognizedToken { token, .. } |
+            ExtraToken { token } => {
                 let (left, _, right) = token;
                 MathError {
                     span: Some((left, right)),
                     message: "You lost me here...".into(),
                 }
             }
-            ParseError::UnrecognizedEOF { location, .. } => {
+            UnrecognizedEOF { location, .. } => {
                 MathError {
                     span: Some((location, location + 1)),
                     message: "Expression ended unexpectedly".into(),
                 }
             }
-            ParseError::User { error } => {
+            User { error } => {
                 eprintln!("ParseError::User: {:?}", error);
                 MathError {
                     span: None,
