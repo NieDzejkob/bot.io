@@ -1,4 +1,8 @@
-use crate::{ast, eval::FuncDef, ParseError};
+use crate::{
+    ast::{self, Span},
+    eval::{EvalError, FuncDef},
+    ParseError,
+};
 use std::convert::TryFrom;
 
 #[derive(Clone, Debug, thiserror::Error)]
@@ -37,6 +41,60 @@ impl From<ParseError<'_>> for MathError {
                 MathError {
                     span: None,
                     message: "An unknown error occured while parsing your expression".into(),
+                }
+            }
+        }
+    }
+}
+
+impl<'a> From<EvalError<'a>> for MathError {
+    fn from(error: EvalError<'a>) -> Self {
+        use EvalError::*;
+        match error {
+            UnknownVariable(Span(name, span)) => {
+                MathError {
+                    span: Some(span),
+                    message: format!("No such variable: `{}`", name),
+                }
+            }
+            UnknownFunction(Span(name, span)) => {
+                MathError {
+                    span: Some(span),
+                    message: format!("No such function: `{}`", name),
+                }
+            }
+            NotAVariable(Span(name, span)) => {
+                MathError {
+                    span: Some(span),
+                    message: format!("`{}` is a function, not a variable", name),
+                }
+            }
+            NotAFunction(Span(name, span)) => {
+                MathError {
+                    span: Some(span),
+                    message: format!("`{}` is a variable, not a function", name),
+                }
+            }
+            Arity { function, arglist, expected, actual } => {
+                MathError {
+                    span: Some(arglist.1),
+                    message: format!(
+                        "`{}` takes {} arguments, but {} were provided",
+                        function.0, expected, actual
+                    ),
+                }
+            }
+            DivisionByZero(span) => {
+                MathError {
+                    span: Some(span.1),
+                    message: "Tried to divide by zero".into(),
+                }
+            }
+            EvaluatingFunction(Span(name, span)) => {
+                // TODO: Report the error with the manual grading mechanism
+                MathError {
+                    span: Some(span),
+                    message: format!("An unexpected error occurred while evaluating `{}`", name),
                 }
             }
         }

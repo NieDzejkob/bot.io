@@ -56,10 +56,11 @@ pub enum EvalError<'a> {
     NotAFunction(Span<&'a str>),
     Arity {
         function: Span<&'a str>,
+        arglist: Span<()>,
         expected: usize,
         actual: usize,
     },
-    DivisionByZero,
+    DivisionByZero(Span<()>),
     EvaluatingFunction(Span<&'a str>),
 }
 
@@ -74,6 +75,7 @@ impl<'input> Expr<'input> {
                 if func.argument_names.len() != args.len() {
                     return Err(EvalError::Arity {
                         function: id,
+                        arglist: args.as_ref().map(drop),
                         expected: func.argument_names.len(),
                         actual: args.len(),
                     });
@@ -106,7 +108,7 @@ impl<'input> Expr<'input> {
                     BinOp::Sub => lhs - rhs,
                     BinOp::Mul => lhs * rhs,
                     BinOp::Div | BinOp::Mod if rhs.is_zero() => {
-                        return Err(EvalError::DivisionByZero);
+                        return Err(EvalError::DivisionByZero(op.map(drop)));
                     }
                     BinOp::Div => lhs / rhs,
                     BinOp::Mod => lhs % rhs,
